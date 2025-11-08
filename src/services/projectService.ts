@@ -58,8 +58,8 @@ class ProjectService {
   }
 
   async createProject(data: CreateProjectRequest) {
-    const response = await api.post<Project>('/projects', data);
-    return response.data;
+    const response = await api.post<{ message: string; project: Project }>('/projects', data);
+    return response.data.project;
   }
 
   async updateProject(id: string, data: Partial<Project>) {

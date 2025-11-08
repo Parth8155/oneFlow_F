@@ -4,9 +4,11 @@ import { ProjectCard } from '@/components/dashboard/ProjectCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardAnalytics, useProjects } from '@/hooks';
 import { FolderKanban, CheckSquare, DollarSign, TrendingUp, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useDashboardAnalytics();
   const { data: projects, isLoading: projectsLoading, error: projectsError } = useProjects();
 
@@ -39,7 +41,7 @@ const Dashboard = () => {
   ] : [];
 
   // Transform projects data for ProjectCard components
-  const projectCards = projects?.slice(0, 4).map(project => ({
+  const projectCards = projects?.map(project => ({
     name: project.name,
     status: project.status as 'planned' | 'in_progress' | 'completed' | 'on_hold',
     progress: 0, // TODO: Calculate progress based on tasks completion
@@ -117,10 +119,13 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
               <div className="w-1 h-6 bg-accent rounded-full" />
-              Recent Projects
+              All Projects
             </h2>
-            <button className="text-accent hover:text-accent/80 font-medium text-sm flex items-center gap-1 group">
-              View all 
+            <button 
+              onClick={() => navigate('/projects')}
+              className="text-accent hover:text-accent/80 font-medium text-sm flex items-center gap-1 group cursor-pointer"
+            >
+              Manage Projects
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </button>
           </div>

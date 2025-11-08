@@ -1,10 +1,13 @@
 import { AppLayout } from '@/components/layout/AppLayout';
+import { CreateProjectForm } from '@/components/projects/CreateProjectForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Plus, FolderKanban, Search, Filter } from 'lucide-react';
+import { Plus, FolderKanban, Search, Filter, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useState } from 'react';
 
 const Projects = () => {
+  const [showCreateForm, setShowCreateForm] = useState(false);
   return (
     <AppLayout>
       <div className="space-y-8 pb-8">
@@ -24,13 +27,33 @@ const Projects = () => {
                   </p>
                 </div>
               </div>
-              <Button className="bg-accent hover:bg-accent/90 text-white shadow-lg hover:shadow-xl transition-all">
-                <Plus className="mr-2 h-4 w-4" />
-                New Project
+              <Button
+                onClick={() => setShowCreateForm(!showCreateForm)}
+                className="bg-accent hover:bg-accent/90 text-white shadow-lg hover:shadow-xl transition-all"
+              >
+                {showCreateForm ? (
+                  <>
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Project
+                  </>
+                )}
               </Button>
             </div>
           </div>
         </div>
+
+        {/* Create Project Form */}
+        {showCreateForm && (
+          <CreateProjectForm
+            onSuccess={() => setShowCreateForm(false)}
+            onCancel={() => setShowCreateForm(false)}
+          />
+        )}
 
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
