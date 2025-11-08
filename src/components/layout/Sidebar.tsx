@@ -32,11 +32,6 @@ const navItems: NavItem[] = [
     roles: ['admin', 'project_manager', 'team_member'],
   },
   {
-    label: 'Tasks',
-    icon: <CheckSquare className="h-5 w-5" />,
-    href: '/tasks',
-  },
-  {
     label: 'Financials',
     icon: <DollarSign className="h-5 w-5" />,
     href: '/financials',
@@ -46,12 +41,6 @@ const navItems: NavItem[] = [
     label: 'Analytics',
     icon: <BarChart3 className="h-5 w-5" />,
     href: '/analytics',
-    roles: ['admin', 'project_manager'],
-  },
-  {
-    label: 'Team',
-    icon: <Users className="h-5 w-5" />,
-    href: '/team',
     roles: ['admin', 'project_manager'],
   },
   {

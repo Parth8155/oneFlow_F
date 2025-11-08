@@ -82,7 +82,7 @@ class ProjectService {
   }
 
   async addProjectMember(projectId: string, userId: string) {
-    const response = await api.post(`/projects/${projectId}/members`, { userId });
+    const response = await api.post(`/projects/${projectId}/members`, { user_id: userId });
     return response.data;
   }
 

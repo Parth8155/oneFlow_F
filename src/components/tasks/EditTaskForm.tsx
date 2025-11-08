@@ -5,31 +5,57 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import taskService from '@/services/taskService';
 import projectService from '@/services/projectService';
 
-interface CreateTaskFormProps {
-  projectId: string;
-  onSuccess?: () => void;
-  trigger?: React.ReactNode;
+interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  priority: 'low' | 'medium' | 'high';
+  status: 'to_do' | 'in_progress' | 'approval' | 'completed';
+  due_date: string | null;
+  assigned_to: number | null;
+  assignedUser?: {
+    id: number;
+    full_name: string;
+    username: string;
+  };
 }
 
-export const CreateTaskForm = ({ projectId, onSuccess, trigger }: CreateTaskFormProps) => {
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+interface EditTaskFormProps {
+  task: Task;
+  projectId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+}
+
+export const EditTaskForm = ({ task, projectId, open, onOpenChange, onSuccess }: EditTaskFormProps) => {
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || '');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task.priority);
   const [dueDate, setDueDate] = useState('');
   const [dueTime, setDueTime] = useState('');
-  const [assignedTo, setAssignedTo] = useState<string>('');
+  const [assignedTo, setAssignedTo] = useState<string>(task.assigned_to?.toString() || '');
   const [loading, setLoading] = useState(false);
   const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const { user } = useAuth();
+
+  // Initialize date and time from task due_date
+  useEffect(() => {
+    if (task.due_date) {
+      const dueDateTime = new Date(task.due_date);
+      const dateString = dueDateTime.toISOString().split('T')[0];
+      const timeString = dueDateTime.toTimeString().slice(0, 5);
+      setDueDate(dateString);
+      setDueTime(timeString);
+    }
+  }, [task.due_date]);
 
   // Fetch project members when dialog opens
   useEffect(() => {
@@ -87,6 +113,7 @@ export const CreateTaskForm = ({ projectId, onSuccess, trigger }: CreateTaskForm
 
     try {
       setLoading(true);
+      
       // Combine date and time if both are provided
       let combinedDueDate = undefined;
       if (dueDate) {
@@ -98,46 +125,31 @@ export const CreateTaskForm = ({ projectId, onSuccess, trigger }: CreateTaskForm
       }
 
       const taskData = {
-        project_id: parseInt(projectId),
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || null,
         priority,
         due_date: combinedDueDate,
         assigned_to: parseInt(assignedTo)
       };
 
-      await taskService.createTask(taskData);
+      await taskService.updateTask(task.id.toString(), taskData);
 
-      toast.success('Task created successfully!');
-      setTitle('');
-      setDescription('');
-      setPriority('medium');
-      setDueDate('');
-      setDueTime('');
-      setAssignedTo('');
-      setOpen(false);
+      toast.success('Task updated successfully!');
+      onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
-      console.error('Failed to create task:', error);
-      toast.error(error?.message || 'Failed to create task');
+      console.error('Failed to update task:', error);
+      toast.error(error?.message || 'Failed to update task');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Task
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
@@ -249,26 +261,24 @@ export const CreateTaskForm = ({ projectId, onSuccess, trigger }: CreateTaskForm
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
-              className="px-6"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+              className="h-12 px-6 rounded-xl border-border/50 hover:bg-accent/5"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="px-6 bg-accent hover:bg-accent/90 text-white"
+              className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-medium"
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
+                  Updating...
                 </>
               ) : (
-                <>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Task
-                </>
+                'Update Task'
               )}
             </Button>
           </div>

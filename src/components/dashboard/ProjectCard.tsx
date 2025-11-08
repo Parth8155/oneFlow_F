@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,24 +32,6 @@ export const ProjectCard = ({ name, status, progress, dueDate, teamSize }: Proje
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground font-medium">Progress</span>
-            <span className="font-bold text-slate-700">{progress}%</span>
-          </div>
-          <div className="space-y-1">
-            <Progress value={progress} className="h-3 bg-slate-200" />
-            <div className="w-full bg-slate-200 rounded-full h-1">
-              {/* eslint-disable-next-line react/no-unknown-property, @typescript-eslint/ban-ts-comment */}
-              {/* Inline width used for the progress bar; acceptable here for dynamic progress */}
-              <div 
-                className="bg-gradient-to-r from-slate-700 to-slate-600 h-1 rounded-full transition-all duration-500" 
-                style={{ width: `${progress}%` } as React.CSSProperties}
-              />
-            </div>
-          </div>
-        </div>
-        
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <div className="p-1 rounded bg-muted/30">

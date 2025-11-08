@@ -6,6 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { 
   ArrowLeft, 
@@ -13,14 +18,19 @@ import {
   MoreVertical, 
   Calendar, 
   User,
+  Users,
   AlertCircle,
   CheckCircle2,
   Clock,
-  Eye
+  Eye,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import projectService from '@/services/projectService';
 import taskService from '@/services/taskService';
+import { adminService } from '@/services/adminService';
 import { CreateTaskForm } from '@/components/tasks/CreateTaskForm';
+import { EditTaskForm } from '@/components/tasks/EditTaskForm';
 
 interface Task {
   id: number;
@@ -70,6 +80,13 @@ export const ProjectTasks = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [teamDialogOpen, setTeamDialogOpen] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [currentMembers, setCurrentMembers] = useState<any[]>([]);
 
   // Group tasks by status and sort To Do by priority
   const tasksByStatus = {
@@ -143,6 +160,73 @@ export const ProjectTasks = () => {
     (project && project.project_manager_id === parseInt(user.id))
   );
 
+  const handleDeleteTask = async (taskId: number) => {
+    try {
+      await taskService.deleteTask(taskId.toString());
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      toast.success('Task deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      toast.error('Failed to delete task');
+    }
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setEditDialogOpen(true);
+  };
+
+  const loadTeamData = async () => {
+    try {
+      setLoadingUsers(true);
+      const [allUsers, currentProjectMembers] = await Promise.all([
+        adminService.getAllUsers(),
+        projectService.getProjectMembers(projectId!)
+      ]);
+      
+      // Filter to only show team_member role users
+      const teamMembers = allUsers.filter((user: any) => user.role === 'team_member');
+      setAvailableUsers(teamMembers);
+      
+      // Handle current members response structure
+      const members = Array.isArray(currentProjectMembers) ? currentProjectMembers : (currentProjectMembers?.members || currentProjectMembers?.data || []);
+      setCurrentMembers(members);
+    } catch (error) {
+      console.error('Failed to load team data:', error);
+      toast.error('Failed to load team data');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleAddTeamMember = async () => {
+    if (!selectedUserId) {
+      toast.error('Please select a team member');
+      return;
+    }
+
+    try {
+      await projectService.addProjectMember(projectId!, selectedUserId);
+      toast.success('Team member added successfully');
+      setSelectedUserId('');
+      loadTeamData(); // Refresh the team data
+    } catch (error: any) {
+      console.error('Failed to add team member:', error);
+      toast.error(error?.message || 'Failed to add team member');
+    }
+  };
+
+  const handleRemoveTeamMember = async (userId: string) => {
+    try {
+      await projectService.removeProjectMember(projectId!, userId);
+      toast.success('Team member removed successfully');
+      loadTeamData(); // Refresh the team data
+    } catch (error: any) {
+      console.error('Failed to remove team member:', error);
+      toast.error(error?.message || 'Failed to remove team member');
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return null;
     return new Date(dateString).toLocaleDateString();
@@ -192,10 +276,90 @@ export const ProjectTasks = () => {
             </div>
           </div>
           {canManageProject && (
-            <CreateTaskForm 
-              projectId={projectId!} 
-              onSuccess={loadProjectAndTasks}
-            />
+            <div className="flex gap-3">
+              <Dialog open={teamDialogOpen} onOpenChange={setTeamDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setTeamDialogOpen(true);
+                      loadTeamData();
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Users className="h-4 w-4" />
+                    Manage Team
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Manage Project Team</DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="space-y-6">
+                    {/* Add Team Member Section */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Add Team Member</Label>
+                      <div className="flex gap-2">
+                        <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder={loadingUsers ? "Loading..." : "Select team member"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableUsers
+                              .filter(user => !currentMembers.some(member => (member.user?.id || member.id) === user.id))
+                              .map((user: any) => (
+                                <SelectItem key={user.id} value={user.id.toString()}>
+                                  {user.full_name || user.username}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          onClick={handleAddTeamMember}
+                          disabled={!selectedUserId || loadingUsers}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Current Team Members */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Current Team Members</Label>
+                      <div className="space-y-2">
+                        {currentMembers.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No team members assigned yet.</p>
+                        ) : (
+                          currentMembers
+                            .filter(member => (member.user?.role || member.role) === 'team_member')
+                            .map((member: any) => (
+                              <div key={member.user?.id || member.id} className="flex items-center justify-between p-2 border rounded">
+                                <span className="text-sm">
+                                  {member.user?.full_name || member.user?.username || member.full_name || member.username}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveTeamMember((member.user?.id || member.id).toString())}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              <CreateTaskForm 
+                projectId={projectId!} 
+                onSuccess={loadProjectAndTasks}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -250,9 +414,54 @@ export const ProjectTasks = () => {
                                   <CardTitle className="text-sm font-medium line-clamp-2">
                                     {task.title}
                                   </CardTitle>
-                                  <Button variant="ghost" size="sm" className="p-1 h-6 w-6">
-                                    <MoreVertical className="h-3 w-3" />
-                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="p-1 h-6 w-6">
+                                        <MoreVertical className="h-3 w-3" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-40">
+                                      <DropdownMenuItem 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditTask(task);
+                                        }}
+                                        className="cursor-pointer"
+                                      >
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Edit Task
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <DropdownMenuItem 
+                                            onSelect={(e) => e.preventDefault()}
+                                            className="cursor-pointer text-destructive focus:text-destructive"
+                                          >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete Task
+                                          </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure you want to delete "{task.title}"? This action cannot be undone.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              onClick={() => handleDeleteTask(task.id)}
+                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            >
+                                              Delete
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
                               </CardHeader>
                               <CardContent className="pt-0">
@@ -301,6 +510,16 @@ export const ProjectTasks = () => {
           })}
         </div>
       </DragDropContext>
+
+      {editingTask && (
+        <EditTaskForm
+          task={editingTask}
+          projectId={projectId!}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSuccess={loadProjectAndTasks}
+        />
+      )}
     </div>
   );
 };
