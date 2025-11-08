@@ -20,30 +20,11 @@ export interface LoginResponse {
   message: string;
 }
 
-export interface RegisterRequest {
-  username: string;
-  email: string;
-  password: string;
-  full_name?: string;
-  role: 'admin' | 'project_manager' | 'team_member' | 'sales_finance';
-  hourly_rate?: number;
-}
-
 class AuthService {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     const response = await api.post<LoginResponse>('/auth/login', credentials);
     
     // Store token (backend returns single token, not separate access/refresh)
-    localStorage.setItem('accessToken', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    
-    return response.data;
-  }
-
-  async register(data: RegisterRequest): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>('/auth/register', data);
-    
-    // Store token
     localStorage.setItem('accessToken', response.data.token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
     

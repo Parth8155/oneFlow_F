@@ -6,8 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Login from "./pages/auth/Login";
-import Signup from "./pages/auth/Signup";
 import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
 import Projects from "./pages/Projects";
 import Tasks from "./pages/Tasks";
 import Financials from "./pages/Financials";
@@ -28,12 +28,19 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Admin />
                 </ProtectedRoute>
               }
             />

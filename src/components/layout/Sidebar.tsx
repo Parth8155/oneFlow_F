@@ -8,7 +8,8 @@ import {
   DollarSign, 
   BarChart3, 
   Settings,
-  Users
+  Users,
+  Shield
 } from 'lucide-react';
 
 interface NavItem {
@@ -57,6 +58,12 @@ const navItems: NavItem[] = [
     label: 'Settings',
     icon: <Settings className="h-5 w-5" />,
     href: '/settings',
+  },
+  {
+    label: 'Admin',
+    icon: <Shield className="h-5 w-5" />,
+    href: '/admin',
+    roles: ['admin'],
   },
 ];
 

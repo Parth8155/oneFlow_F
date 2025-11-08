@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { LoginForm } from '@/components/auth/LoginForm';
 
 const Login = () => {
@@ -39,10 +38,7 @@ const Login = () => {
             </div>
             
             <p className="text-sm text-muted-foreground">
-              Not a member?{' '}
-              <Link to="/signup" className="text-accent hover:text-accent/80 font-medium underline-offset-4 hover:underline">
-                Register now
-              </Link>
+              Need help accessing your account? Contact your administrator.
             </p>
           </div>
         </div>

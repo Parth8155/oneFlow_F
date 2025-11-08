@@ -8,6 +8,8 @@ export interface Project {
   project_manager_id: number | null;
   deadline: string | null;
   budget: number;
+  priority: 'high' | 'medium' | 'low';
+  image: string | null;
   created_at: string;
   updated_at: string;
   projectManager?: {
@@ -34,6 +36,9 @@ export interface CreateProjectRequest {
   description?: string;
   deadline?: string;
   budget?: number;
+  project_manager_id?: number;
+  priority?: 'high' | 'medium' | 'low';
+  image?: string;
 }
 
 export interface ProjectResponse {
@@ -83,6 +88,15 @@ class ProjectService {
 
   async removeProjectMember(projectId: string, userId: string) {
     await api.delete(`/projects/${projectId}/members/${userId}`);
+  }
+
+  async getAvailableManagers() {
+    const response = await api.get('/admin/users');
+    // Filter users who are project managers only (not admins)
+    const managers = response.data.users.filter((user: any) => 
+      user.role === 'project_manager'
+    );
+    return managers;
   }
 }
 

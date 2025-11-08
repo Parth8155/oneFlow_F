@@ -15,7 +15,6 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<void>;
-  signup: (username: string, email: string, password: string, full_name: string, role: UserRole) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -70,21 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signup = async (username: string, email: string, password: string, full_name: string, role: UserRole) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await authService.register({ username, email, password, full_name, role });
-      setUser(response.user);
-    } catch (err: any) {
-      const errorMessage = err.error || 'Signup failed. Please try again.';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = async () => {
     try {
       await authService.logout();
@@ -101,7 +85,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         login,
-        signup,
         logout,
         isAuthenticated: !!user,
         isLoading,
