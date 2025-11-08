@@ -15,25 +15,33 @@ interface KPICardProps {
 
 export const KPICard = ({ title, value, icon: Icon, trend, description }: KPICardProps) => {
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md bg-gradient-to-br from-white to-accent/5">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <Icon className="h-5 w-5 text-muted-foreground" />
+        <div className="p-2 rounded-lg bg-accent/10">
+          <Icon className="h-5 w-5 text-accent" />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-3xl font-bold text-foreground mb-2">{value}</div>
         {trend && (
-          <p className={cn(
-            "text-xs mt-1",
-            trend.isPositive ? "text-success" : "text-destructive"
-          )}>
-            {trend.isPositive ? '+' : ''}{trend.value}% from last month
-          </p>
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
+              trend.isPositive 
+                ? "bg-accent/10 text-accent" 
+                : "bg-destructive/10 text-destructive"
+            )}>
+              <span>{trend.isPositive ? '↗' : '↙'}</span>
+              {trend.isPositive ? '+' : ''}{trend.value}%
+            </div>
+            <span className="text-xs text-muted-foreground">vs last month</span>
+          </div>
         )}
         {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <p className="text-xs text-muted-foreground mt-2">{description}</p>
         )}
       </CardContent>
     </Card>

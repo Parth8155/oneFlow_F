@@ -11,6 +11,7 @@ import { UserPlus } from 'lucide-react';
 
 export const SignupForm = () => {
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<UserRole>('team_member');
@@ -23,7 +24,7 @@ export const SignupForm = () => {
     setIsLoading(true);
 
     try {
-      await signup(email, password, name, role);
+      await signup(username, email, password, name, role);
       toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (error) {
@@ -51,6 +52,17 @@ export const SignupForm = () => {
               placeholder="John Doe"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              type="text"
+              placeholder="johndoe"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>

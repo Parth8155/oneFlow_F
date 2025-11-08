@@ -1,22 +1,25 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import authService from '@/services/authService';
 
 export type UserRole = 'admin' | 'project_manager' | 'team_member' | 'sales_finance';
 
 export interface User {
   id: string;
+  username: string;
   email: string;
-  name: string;
+  full_name?: string;
   role: UserRole;
-  avatar?: string;
+  hourly_rate?: number;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  signup: (username: string, email: string, password: string, full_name: string, role: UserRole) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
+  error: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,51 +35,65 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for stored auth token and validate
+    // Check for stored auth token and restore user session
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const accessToken = localStorage.getItem('accessToken');
+    
+    if (storedUser && accessToken) {
       try {
         setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user:', error);
+      } catch (err) {
+        console.error('Failed to parse stored user:', err);
         localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
       }
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    // TODO: Implement actual API call
-    // Mock login for now
-    const mockUser: User = {
-      id: '1',
-      email,
-      name: email.split('@')[0],
-      role: 'project_manager',
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
+  const login = async (username: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authService.login({ username, password });
+      setUser(response.user);
+    } catch (err: any) {
+      const errorMessage = err.error || 'Login failed. Please try again.';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const signup = async (email: string, password: string, name: string, role: UserRole) => {
-    // TODO: Implement actual API call
-    const mockUser: User = {
-      id: Math.random().toString(36).substring(7),
-      email,
-      name,
-      role,
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
+  const signup = async (username: string, email: string, password: string, full_name: string, role: UserRole) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authService.register({ username, email, password, full_name, role });
+      setUser(response.user);
+    } catch (err: any) {
+      const errorMessage = err.error || 'Signup failed. Please try again.';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setUser(null);
+      setError(null);
+    }
   };
 
   return (
@@ -88,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         isAuthenticated: !!user,
         isLoading,
+        error,
       }}
     >
       {children}

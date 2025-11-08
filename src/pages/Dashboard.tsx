@@ -48,28 +48,56 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            {user?.role === 'admin' && 'System overview and key metrics'}
-            {user?.role === 'project_manager' && 'Your project portfolio at a glance'}
-            {user?.role === 'team_member' && 'Your tasks and assignments'}
-            {user?.role === 'sales_finance' && 'Financial overview and analytics'}
-          </p>
+      <div className="space-y-8 pb-8">
+        {/* Header Section */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-accent/5 via-transparent to-accent/5 rounded-2xl" />
+          <div className="relative p-6 space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-accent/10 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-accent" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                  Good morning, {user?.full_name || user?.username || 'User'}! 👋
+                </h1>
+                <p className="text-muted-foreground mt-1 text-lg">
+                  {user?.role === 'admin' && 'System overview and key metrics'}
+                  {user?.role === 'project_manager' && 'Your project portfolio at a glance'}
+                  {user?.role === 'team_member' && 'Your tasks and assignments'}
+                  {user?.role === 'sales_finance' && 'Financial overview and analytics'}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {kpiData.map((kpi) => (
-            <KPICard key={kpi.title} {...kpi} />
-          ))}
+        {/* KPI Cards */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+            <div className="w-1 h-6 bg-accent rounded-full" />
+            Key Metrics
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {kpiData.map((kpi) => (
+              <KPICard key={kpi.title} {...kpi} />
+            ))}
+          </div>
         </div>
 
+        {/* Projects Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight">Recent Projects</h2>
+            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <div className="w-1 h-6 bg-accent rounded-full" />
+              Recent Projects
+            </h2>
+            <button className="text-accent hover:text-accent/80 font-medium text-sm flex items-center gap-1 group">
+              View all 
+              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </button>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
               <ProjectCard key={project.name} {...project} />
             ))}

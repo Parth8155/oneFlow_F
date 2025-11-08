@@ -31,45 +31,60 @@ export const Header = () => {
   };
 
   return (
-    <header className="h-16 border-b border-border bg-card">
+    <header className="h-18 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="flex h-full items-center justify-between px-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold text-foreground">
-            Welcome back, {user?.name}
-          </h2>
+          <div className="hidden md:block">
+            <h2 className="text-lg font-medium text-muted-foreground">
+              Welcome back, <span className="text-foreground font-semibold">{user?.full_name || user?.username}</span> ✨
+            </h2>
+          </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="relative hover:bg-accent/10 hover:text-accent"
+          >
             <Bell className="h-5 w-5" />
+            <div className="absolute -top-1 -right-1 h-3 w-3 bg-accent rounded-full border-2 border-background" />
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar>
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user?.name ? getInitials(user.name) : 'U'}
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:shadow-md transition-all">
+                <Avatar className="border-2 border-accent/20">
+                  <AvatarFallback className="bg-accent text-white font-semibold">
+                    {user?.full_name ? getInitials(user.full_name) : user?.username?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-64 border-0 shadow-lg">
+              <DropdownMenuLabel className="pb-3">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-sm font-semibold">{user?.full_name || user?.username}</p>
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {user?.role?.replace('_', ' ')}
-                  </p>
+                  <div className="mt-2">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent capitalize">
+                      {user?.role?.replace('_', ' ')}
+                    </span>
+                  </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
+              <DropdownMenuItem 
+                onClick={() => navigate('/settings')}
+                className="cursor-pointer hover:bg-accent/10 hover:text-accent"
+              >
                 <User className="mr-2 h-4 w-4" />
                 Profile Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem 
+                onClick={handleLogout}
+                className="cursor-pointer text-destructive hover:bg-destructive/10"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>

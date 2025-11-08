@@ -12,8 +12,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background to-accent/5">
+          <div className="p-6 min-h-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>
