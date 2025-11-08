@@ -12,6 +12,10 @@ import Projects from "./pages/Projects";
 import { ProjectTasks } from "./pages/ProjectTasks";
 import Tasks from "./pages/Tasks";
 import Financials from "./pages/Financials";
+import FinancialDashboard from "./pages/FinancialDashboard";
+import SalesOrdersPage from "./pages/SalesOrdersPage";
+import InvoicesPage from "./pages/InvoicesPage";
+import ExpensesPage from "./pages/ExpensesPage";
 import Analytics from "./pages/Analytics";
 import Team from "./pages/Team";
 import Settings from "./pages/Settings";
@@ -72,8 +76,32 @@ const App = () => (
             <Route
               path="/financials"
               element={
-                <ProtectedRoute>
-                  <Financials />
+                <ProtectedRoute requiredRole={["admin", "project_manager", "sales_finance"]}>
+                  <FinancialDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sales-orders"
+              element={
+                <ProtectedRoute requiredRole={["admin", "sales_finance"]}>
+                  <SalesOrdersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/invoices"
+              element={
+                <ProtectedRoute requiredRole={["admin", "sales_finance"]}>
+                  <InvoicesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute requiredRole={["admin", "sales_finance"]}>
+                  <ExpensesPage />
                 </ProtectedRoute>
               }
             />

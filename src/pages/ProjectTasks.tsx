@@ -11,6 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { 
   ArrowLeft, 
@@ -87,6 +89,10 @@ export const ProjectTasks = () => {
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [currentMembers, setCurrentMembers] = useState<any[]>([]);
+  const [logHoursDialogOpen, setLogHoursDialogOpen] = useState(false);
+  const [selectedTaskForLogging, setSelectedTaskForLogging] = useState<Task | null>(null);
+  const [hoursToLog, setHoursToLog] = useState('');
+  const [hoursDescription, setHoursDescription] = useState('');
 
   // Group tasks by status and sort To Do by priority
   const tasksByStatus = {
@@ -174,6 +180,36 @@ export const ProjectTasks = () => {
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
     setEditDialogOpen(true);
+  };
+
+  const handleLogHours = (task: Task) => {
+    setSelectedTaskForLogging(task);
+    setLogHoursDialogOpen(true);
+  };
+
+  const handleLogHoursSubmit = async () => {
+    if (!selectedTaskForLogging || !hoursToLog || parseFloat(hoursToLog) <= 0) {
+      toast.error('Please enter valid hours');
+      return;
+    }
+
+    try {
+      await taskService.logWorkingHours(
+        selectedTaskForLogging.id,
+        parseFloat(hoursToLog),
+        hoursDescription || undefined
+      );
+      
+      toast.success(`Logged ${hoursToLog} hours successfully`);
+      setLogHoursDialogOpen(false);
+      setHoursToLog('');
+      setHoursDescription('');
+      setSelectedTaskForLogging(null);
+      loadProjectAndTasks(); // Refresh tasks to show updated hours
+    } catch (error) {
+      console.error('Failed to log hours:', error);
+      toast.error('Failed to log hours');
+    }
   };
 
   const loadTeamData = async () => {
@@ -431,6 +467,18 @@ export const ProjectTasks = () => {
                                         <Edit className="mr-2 h-4 w-4" />
                                         Edit Task
                                       </DropdownMenuItem>
+                                      {(task.assigned_to === user?.id || user?.role === 'admin' || user?.role === 'project_manager') && (
+                                        <DropdownMenuItem 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleLogHours(task);
+                                          }}
+                                          className="cursor-pointer"
+                                        >
+                                          <Clock className="mr-2 h-4 w-4" />
+                                          Log Hours
+                                        </DropdownMenuItem>
+                                      )}
                                       <DropdownMenuSeparator />
                                       <AlertDialog>
                                         <AlertDialogTrigger asChild>
@@ -496,6 +544,36 @@ export const ProjectTasks = () => {
                                     {formatDate(task.due_date)}
                                   </div>
                                 )}
+
+                                {/* Tracking Information */}
+                                <div className="mt-3 pt-2 border-t border-gray-100 space-y-1">
+                                  {/* Hours worked */}
+                                  {task.total_hours_worked !== undefined && task.total_hours_worked > 0 && (
+                                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                                      <Clock className="h-3 w-3" />
+                                      <span>{task.total_hours_worked}h worked</span>
+                                      {task.estimated_hours && (
+                                        <span className="text-gray-400">/ {task.estimated_hours}h est.</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Last modified */}
+                                  {task.lastModifiedBy && task.last_modified_at && (
+                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                      <User className="h-3 w-3" />
+                                      <span>Updated by {task.lastModifiedBy.full_name || task.lastModifiedBy.username}</span>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Created by */}
+                                  {task.createdBy && (
+                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                      <Plus className="h-3 w-3" />
+                                      <span>Created by {task.createdBy.full_name || task.createdBy.username}</span>
+                                    </div>
+                                  )}
+                                </div>
                               </CardContent>
                             </Card>
                           )}
@@ -520,6 +598,72 @@ export const ProjectTasks = () => {
           onSuccess={loadProjectAndTasks}
         />
       )}
+
+      {/* Log Hours Dialog */}
+      <Dialog open={logHoursDialogOpen} onOpenChange={setLogHoursDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Log Working Hours</DialogTitle>
+          </DialogHeader>
+          
+          {selectedTaskForLogging && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Task</Label>
+                <p className="text-sm text-gray-600 mt-1">{selectedTaskForLogging.title}</p>
+              </div>
+              
+              <div>
+                <Label htmlFor="hours">Hours Worked</Label>
+                <Input
+                  id="hours"
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  max="24"
+                  value={hoursToLog}
+                  onChange={(e) => setHoursToLog(e.target.value)}
+                  placeholder="e.g. 2.5"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="description">Description (optional)</Label>
+                <Textarea
+                  id="description"
+                  value={hoursDescription}
+                  onChange={(e) => setHoursDescription(e.target.value)}
+                  placeholder="What did you work on?"
+                  rows={3}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleLogHoursSubmit}
+                  className="flex-1"
+                  disabled={!hoursToLog || parseFloat(hoursToLog) <= 0}
+                >
+                  Log Hours
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setLogHoursDialogOpen(false);
+                    setHoursToLog('');
+                    setHoursDescription('');
+                    setSelectedTaskForLogging(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

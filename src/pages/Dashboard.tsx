@@ -9,11 +9,18 @@ import { useNavigate } from 'react-router-dom';
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useDashboardAnalytics();
+  
+  // Check if user has analytics access (admin, project_manager, sales_finance)
+  const hasAnalyticsAccess = user && ['admin', 'project_manager', 'sales_finance'].includes(user.role);
+  
+  // Only fetch analytics if user has access
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useDashboardAnalytics({
+    enabled: hasAnalyticsAccess
+  });
   const { data: projects, isLoading: projectsLoading, error: projectsError } = useProjects();
 
-  // Transform analytics data for KPI cards
-  const kpiData = analytics ? [
+  // Transform analytics data for KPI cards (only when user has access)
+  const kpiData = hasAnalyticsAccess && analytics ? [
     { 
       title: 'Active Projects', 
       value: analytics.activeProjects || 0, 
@@ -49,8 +56,8 @@ const Dashboard = () => {
     teamSize: project.members?.length || 0,
   })) || [];
 
-  const isLoading = analyticsLoading || projectsLoading;
-  const hasError = analyticsError || projectsError;
+  const isLoading = (hasAnalyticsAccess ? analyticsLoading : false) || projectsLoading;
+  const hasError = (hasAnalyticsAccess ? analyticsError : false) || projectsError;
 
   if (isLoading) {
     return (
@@ -101,18 +108,20 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-            <div className="w-1 h-6 bg-blue-600 rounded-full" />
-            Key Metrics
-          </h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {kpiData.map((kpi) => (
-              <KPICard key={kpi.title} {...kpi} />
-            ))}
+        {/* KPI Cards - Only for admin, project_manager, sales_finance */}
+        {hasAnalyticsAccess && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <div className="w-1 h-6 bg-blue-600 rounded-full" />
+              Key Metrics
+            </h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {kpiData.map((kpi) => (
+                <KPICard key={kpi.title} {...kpi} />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Projects Section */}
         <div className="space-y-4">

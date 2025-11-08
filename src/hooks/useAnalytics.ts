@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import analyticsService from '@/services/analyticsService';
 
-export const useDashboardAnalytics = () => {
+export const useDashboardAnalytics = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['analytics', 'dashboard'],
     queryFn: async () => {
@@ -13,6 +13,7 @@ export const useDashboardAnalytics = () => {
       }
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled: options?.enabled,
   });
 };
 

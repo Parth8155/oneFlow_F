@@ -9,7 +9,24 @@ export interface Task {
   priority: 'low' | 'medium' | 'high';
   assigned_to: number | null;
   due_date: string | null;
+  created_by?: number;
+  last_modified_by?: number;
+  last_modified_at?: string;
+  total_hours_worked?: number;
+  estimated_hours?: number;
   assignedUser?: {
+    id: number;
+    username: string;
+    full_name: string;
+    email: string;
+  };
+  createdBy?: {
+    id: number;
+    username: string;
+    full_name: string;
+    email: string;
+  };
+  lastModifiedBy?: {
     id: number;
     username: string;
     full_name: string;
@@ -69,6 +86,14 @@ class TaskService {
 
   async deleteTask(id: string) {
     await api.delete(`/tasks/${id}`);
+  }
+
+  async logWorkingHours(id: number, hours: number, description?: string) {
+    const response = await api.post<{ task: Task; hoursLogged: number }>(`/tasks/${id}/log-hours`, {
+      hours,
+      description
+    });
+    return response.data;
   }
 
   async getTaskComments(taskId: string) {

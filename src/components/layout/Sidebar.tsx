@@ -9,7 +9,11 @@ import {
   BarChart3, 
   Settings,
   Users,
-  Shield
+  Shield,
+  FileText,
+  Receipt,
+  CreditCard,
+  TrendingUp
 } from 'lucide-react';
 
 interface NavItem {
@@ -36,6 +40,24 @@ const navItems: NavItem[] = [
     icon: <DollarSign className="h-5 w-5" />,
     href: '/financials',
     roles: ['admin', 'project_manager', 'sales_finance'],
+  },
+  {
+    label: 'Sales Orders',
+    icon: <FileText className="h-5 w-5" />,
+    href: '/sales-orders',
+    roles: ['admin', 'sales_finance'],
+  },
+  {
+    label: 'Invoices',
+    icon: <Receipt className="h-5 w-5" />,
+    href: '/invoices',
+    roles: ['admin', 'sales_finance'],
+  },
+  {
+    label: 'Expenses',
+    icon: <CreditCard className="h-5 w-5" />,
+    href: '/expenses',
+    roles: ['admin', 'sales_finance'],
   },
   {
     label: 'Analytics',
