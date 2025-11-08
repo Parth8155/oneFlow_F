@@ -1,26 +1,31 @@
 import api from './api';
 
 export interface Task {
-  id: string;
-  projectId: string;
+  id: number;
+  project_id: number;
   title: string;
   description: string;
-  status: 'new' | 'in_progress' | 'blocked' | 'done';
+  status: 'to_do' | 'in_progress' | 'approval' | 'completed';
   priority: 'low' | 'medium' | 'high';
-  assigneeId: string;
-  dueDate: string;
-  estimatedHours: number;
-  actualHours: number;
+  assigned_to: number | null;
+  due_date: string | null;
+  assignedUser?: {
+    id: number;
+    username: string;
+    full_name: string;
+    email: string;
+  };
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateTaskRequest {
-  projectId: string;
+  project_id: number;
   title: string;
-  description: string;
+  description?: string;
   priority: 'low' | 'medium' | 'high';
-  assigneeId: string;
-  dueDate: string;
-  estimatedHours: number;
+  assigned_to?: number;
+  due_date?: string;
 }
 
 export interface TaskComment {
@@ -47,8 +52,18 @@ class TaskService {
     return response.data;
   }
 
+  async getTasksByProject(projectId: string) {
+    const response = await api.get<Task[]>(`/projects/${projectId}/tasks`);
+    return response.data;
+  }
+
   async updateTask(id: string, data: Partial<Task>) {
     const response = await api.put<Task>(`/tasks/${id}`, data);
+    return response.data;
+  }
+
+  async updateTaskStatus(id: number, status: Task['status']) {
+    const response = await api.put<Task>(`/tasks/${id}`, { status });
     return response.data;
   }
 

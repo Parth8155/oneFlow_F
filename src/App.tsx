@@ -9,6 +9,7 @@ import Login from "./pages/auth/Login";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Projects from "./pages/Projects";
+import { ProjectTasks } from "./pages/ProjectTasks";
 import Tasks from "./pages/Tasks";
 import Financials from "./pages/Financials";
 import Analytics from "./pages/Analytics";
@@ -49,6 +50,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Projects />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:projectId/tasks"
+              element={
+                <ProtectedRoute>
+                  <ProjectTasks />
                 </ProtectedRoute>
               }
             />

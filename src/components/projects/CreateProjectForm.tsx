@@ -76,6 +76,18 @@ export const CreateProjectForm = ({ onSuccess, onCancel }: CreateProjectFormProp
       return;
     }
 
+    // Validate end date is not in the past
+    if (deadline) {
+      const selectedDate = new Date(deadline);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+      
+      if (selectedDate < today) {
+        toast.error('End date cannot be in the past');
+        return;
+      }
+    }
+
     try {
       const formData = new FormData();
       formData.append('name', name.trim());
@@ -190,6 +202,38 @@ export const CreateProjectForm = ({ onSuccess, onCancel }: CreateProjectFormProp
                 rows={3}
                 className="px-4 py-3 rounded-xl border-border/50 bg-background focus:border-accent focus:ring-accent/20 resize-none"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="endDate" className="text-sm font-medium text-foreground">
+                  End Date
+                </Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="h-12 px-4 rounded-xl border-border/50 bg-background focus:border-accent focus:ring-accent/20"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="budget" className="text-sm font-medium text-foreground">
+                  Budget ($)
+                </Label>
+                <Input
+                  id="budget"
+                  type="number"
+                  placeholder="0.00"
+                  value={budget}
+                  onChange={(e) => setBudget(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  className="h-12 px-4 rounded-xl border-border/50 bg-background focus:border-accent focus:ring-accent/20"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
