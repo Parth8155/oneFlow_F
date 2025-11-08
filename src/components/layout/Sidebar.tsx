@@ -79,7 +79,7 @@ export const Sidebar = () => {
     <aside className="w-64 bg-background border-r border-border/50 shadow-sm">
       <div className="flex h-18 items-center px-6 border-b border-border/50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-lg">O</span>
           </div>
           <h1 className="text-xl font-bold text-foreground">OneFlow</h1>
@@ -93,8 +93,8 @@ export const Sidebar = () => {
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
-                'text-muted-foreground hover:text-foreground hover:bg-accent/10',
-                isActive && 'bg-accent text-white shadow-lg hover:bg-accent hover:text-white'
+                'text-muted-foreground hover:text-foreground hover:bg-slate-100',
+                isActive && 'bg-slate-800 text-white shadow-lg hover:bg-slate-700 hover:text-white'
               )
             }
           >
@@ -111,9 +111,9 @@ export const Sidebar = () => {
       
       {/* Footer */}
       <div className="absolute bottom-4 left-4 right-4">
-        <div className="p-3 bg-accent/5 rounded-xl border border-accent/10">
+        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-slate-700 rounded-full animate-pulse" />
             <span>All systems operational</span>
           </div>
         </div>

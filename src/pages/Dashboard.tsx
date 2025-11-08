@@ -80,11 +80,11 @@ const Dashboard = () => {
       <div className="space-y-8 pb-8">
         {/* Header Section */}
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-accent/5 via-transparent to-accent/5 rounded-2xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-800/10 via-transparent to-slate-800/10 rounded-2xl" />
           <div className="relative p-6 space-y-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent/10 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-accent" />
+              <div className="p-2 bg-slate-800 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -104,7 +104,7 @@ const Dashboard = () => {
         {/* KPI Cards */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-            <div className="w-1 h-6 bg-accent rounded-full" />
+            <div className="w-1 h-6 bg-blue-600 rounded-full" />
             Key Metrics
           </h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -118,12 +118,12 @@ const Dashboard = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <div className="w-1 h-6 bg-accent rounded-full" />
+              <div className="w-1 h-6 bg-slate-700 rounded-full" />
               All Projects
             </h2>
             <button 
               onClick={() => navigate('/projects')}
-              className="text-accent hover:text-accent/80 font-medium text-sm flex items-center gap-1 group cursor-pointer"
+              className="text-slate-700 hover:text-slate-600 font-medium text-sm flex items-center gap-1 group cursor-pointer"
             >
               Manage Projects
               <span className="group-hover:translate-x-1 transition-transform">→</span>

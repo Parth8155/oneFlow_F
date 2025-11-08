@@ -48,7 +48,7 @@ class TaskService {
   }
 
   async createTask(data: CreateTaskRequest) {
-    const response = await api.post<Task>('/tasks', data);
+    const response = await api.post('/tasks', data);
     return response.data;
   }
 

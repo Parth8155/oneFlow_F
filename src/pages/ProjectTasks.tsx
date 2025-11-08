@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import projectService from '@/services/projectService';
 import taskService from '@/services/taskService';
+import { CreateTaskForm } from '@/components/tasks/CreateTaskForm';
 
 interface Task {
   id: number;
@@ -69,7 +70,6 @@ export const ProjectTasks = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateTask, setShowCreateTask] = useState(false);
 
   // Group tasks by status and sort To Do by priority
   const tasksByStatus = {
@@ -139,6 +139,7 @@ export const ProjectTasks = () => {
   const canManageProject = user && (
     user.role === 'admin' || 
     user.role === 'project_manager' || 
+    user.role === 'team_member' ||
     (project && project.project_manager_id === parseInt(user.id))
   );
 
@@ -191,10 +192,10 @@ export const ProjectTasks = () => {
             </div>
           </div>
           {canManageProject && (
-            <Button onClick={() => setShowCreateTask(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Task
-            </Button>
+            <CreateTaskForm 
+              projectId={projectId!} 
+              onSuccess={loadProjectAndTasks}
+            />
           )}
         </div>
       </div>

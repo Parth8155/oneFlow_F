@@ -44,17 +44,17 @@ export const Header = () => {
           <Button 
             variant="ghost" 
             size="icon"
-            className="relative hover:bg-accent/10 hover:text-accent"
+            className="relative hover:bg-slate-100 hover:text-slate-700"
           >
             <Bell className="h-5 w-5" />
-            <div className="absolute -top-1 -right-1 h-3 w-3 bg-accent rounded-full border-2 border-background" />
+            <div className="absolute -top-1 -right-1 h-3 w-3 bg-slate-700 rounded-full border-2 border-background" />
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:shadow-md transition-all">
-                <Avatar className="border-2 border-accent/20">
-                  <AvatarFallback className="bg-accent text-white font-semibold">
+                <Avatar className="border-2 border-slate-200">
+                  <AvatarFallback className="bg-slate-800 text-white font-semibold">
                     {user?.full_name ? getInitials(user.full_name) : user?.username?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -66,7 +66,7 @@ export const Header = () => {
                   <p className="text-sm font-semibold">{user?.full_name || user?.username}</p>
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                   <div className="mt-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent capitalize">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-800 text-white capitalize">
                       {user?.role?.replace('_', ' ')}
                     </span>
                   </div>
@@ -75,7 +75,7 @@ export const Header = () => {
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => navigate('/settings')}
-                className="cursor-pointer hover:bg-accent/10 hover:text-accent"
+                className="cursor-pointer hover:bg-slate-100 hover:text-slate-700"
               >
                 <User className="mr-2 h-4 w-4" />
                 Profile Settings

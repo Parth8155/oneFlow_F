@@ -13,20 +13,20 @@ interface ProjectCardProps {
 }
 
 const statusConfig = {
-  planned: { label: 'Planned', className: 'bg-muted/50 text-muted-foreground border-muted' },
-  in_progress: { label: 'In Progress', className: 'bg-accent/10 text-accent border-accent/20' },
-  completed: { label: 'Completed', className: 'bg-success/10 text-success border-success/20' },
-  on_hold: { label: 'On Hold', className: 'bg-warning/10 text-warning border-warning/20' },
+  planned: { label: 'Planned', className: 'bg-slate-100 text-slate-700 border-slate-300' },
+  in_progress: { label: 'In Progress', className: 'bg-slate-800 text-white border-slate-700' },
+  completed: { label: 'Completed', className: 'bg-slate-700 text-white border-slate-600' },
+  on_hold: { label: 'On Hold', className: 'bg-slate-600 text-white border-slate-500' },
 };
 
 export const ProjectCard = ({ name, status, progress, dueDate, teamSize }: ProjectCardProps) => {
   const statusInfo = statusConfig[status];
 
   return (
-    <Card className="hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-0 shadow-md bg-gradient-to-br from-white via-white to-accent/5 group">
+    <Card className="hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-0 shadow-md bg-gradient-to-br from-white via-white to-slate-50 group">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-lg font-semibold group-hover:text-accent transition-colors">{name}</CardTitle>
+          <CardTitle className="text-lg font-semibold group-hover:text-slate-700 transition-colors">{name}</CardTitle>
           <Badge className={cn('border', statusInfo.className)}>
             {statusInfo.label}
           </Badge>
@@ -36,13 +36,15 @@ export const ProjectCard = ({ name, status, progress, dueDate, teamSize }: Proje
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground font-medium">Progress</span>
-            <span className="font-bold text-accent">{progress}%</span>
+            <span className="font-bold text-slate-700">{progress}%</span>
           </div>
           <div className="space-y-1">
-            <Progress value={progress} className="h-3 bg-accent/10" />
-            <div className="w-full bg-accent/10 rounded-full h-1">
+            <Progress value={progress} className="h-3 bg-slate-200" />
+            <div className="w-full bg-slate-200 rounded-full h-1">
+              {/* eslint-disable-next-line react/no-unknown-property, @typescript-eslint/ban-ts-comment */}
+              {/* Inline width used for the progress bar; acceptable here for dynamic progress */}
               <div 
-                className="bg-gradient-to-r from-accent to-accent/80 h-1 rounded-full transition-all duration-500" 
+                className="bg-gradient-to-r from-slate-700 to-slate-600 h-1 rounded-full transition-all duration-500" 
                 style={{ width: `${progress}%` } as React.CSSProperties}
               />
             </div>
