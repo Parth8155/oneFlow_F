@@ -1,29 +1,54 @@
 import api from './api';
 
 export interface Project {
-  id: string;
+  id: number;
   name: string;
-  description: string;
+  description: string | null;
   status: 'planned' | 'in_progress' | 'completed' | 'on_hold';
-  startDate: string;
-  endDate: string;
+  project_manager_id: number | null;
+  deadline: string | null;
   budget: number;
-  progress: number;
-  managerId: string;
-  teamMembers: string[];
+  created_at: string;
+  updated_at: string;
+  projectManager?: {
+    id: number;
+    username: string;
+    full_name: string;
+    email: string;
+  };
+  members?: Array<{
+    id: number;
+    user: {
+      id: number;
+      username: string;
+      full_name: string;
+      email: string;
+      role: string;
+    };
+    assigned_at: string;
+  }>;
 }
 
 export interface CreateProjectRequest {
   name: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  budget: number;
+  description?: string;
+  deadline?: string;
+  budget?: number;
+}
+
+export interface ProjectResponse {
+  projects: Project[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 class ProjectService {
-  async getAllProjects(filters?: any) {
-    const response = await api.get<Project[]>('/projects', { params: filters });
+  async getAllProjects(filters?: any): Promise<ProjectResponse> {
+    const response = await api.get<ProjectResponse>('/projects', { params: filters });
     return response.data;
   }
 

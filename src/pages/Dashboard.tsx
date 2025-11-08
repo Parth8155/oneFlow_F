@@ -2,49 +2,76 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { ProjectCard } from '@/components/dashboard/ProjectCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { FolderKanban, CheckSquare, DollarSign, TrendingUp } from 'lucide-react';
+import { useDashboardAnalytics, useProjects } from '@/hooks';
+import { FolderKanban, CheckSquare, DollarSign, TrendingUp, Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useDashboardAnalytics();
+  const { data: projects, isLoading: projectsLoading, error: projectsError } = useProjects();
 
-  // Mock data - will be replaced with API calls
-  const kpiData = [
-    { title: 'Active Projects', value: 12, icon: FolderKanban, trend: { value: 8, isPositive: true } },
-    { title: 'Open Tasks', value: 34, icon: CheckSquare, trend: { value: 5, isPositive: false } },
-    { title: 'Total Revenue', value: '$125k', icon: DollarSign, trend: { value: 12, isPositive: true } },
-    { title: 'Team Efficiency', value: '94%', icon: TrendingUp, trend: { value: 3, isPositive: true } },
-  ];
+  // Transform analytics data for KPI cards
+  const kpiData = analytics ? [
+    { 
+      title: 'Active Projects', 
+      value: analytics.activeProjects || 0, 
+      icon: FolderKanban, 
+      trend: { value: analytics.projectGrowth || 0, isPositive: (analytics.projectGrowth || 0) >= 0 } 
+    },
+    { 
+      title: 'Open Tasks', 
+      value: analytics.openTasks || 0, 
+      icon: CheckSquare, 
+      trend: { value: analytics.taskGrowth || 0, isPositive: (analytics.taskGrowth || 0) >= 0 } 
+    },
+    { 
+      title: 'Total Revenue', 
+      value: `$${analytics.totalRevenue?.toLocaleString() || '0'}`, 
+      icon: DollarSign, 
+      trend: { value: analytics.revenueGrowth || 0, isPositive: (analytics.revenueGrowth || 0) >= 0 } 
+    },
+    { 
+      title: 'Team Efficiency', 
+      value: `${analytics.teamEfficiency || 0}%`, 
+      icon: TrendingUp, 
+      trend: { value: analytics.efficiencyGrowth || 0, isPositive: (analytics.efficiencyGrowth || 0) >= 0 } 
+    },
+  ] : [];
 
-  const projects = [
-    {
-      name: 'Website Redesign',
-      status: 'in_progress' as const,
-      progress: 65,
-      dueDate: 'Dec 15, 2024',
-      teamSize: 5,
-    },
-    {
-      name: 'Mobile App Development',
-      status: 'in_progress' as const,
-      progress: 40,
-      dueDate: 'Jan 30, 2025',
-      teamSize: 8,
-    },
-    {
-      name: 'Marketing Campaign',
-      status: 'planned' as const,
-      progress: 10,
-      dueDate: 'Feb 20, 2025',
-      teamSize: 3,
-    },
-    {
-      name: 'Infrastructure Upgrade',
-      status: 'completed' as const,
-      progress: 100,
-      dueDate: 'Nov 30, 2024',
-      teamSize: 4,
-    },
-  ];
+  // Transform projects data for ProjectCard components
+  const projectCards = projects?.slice(0, 4).map(project => ({
+    name: project.name,
+    status: project.status as 'planned' | 'in_progress' | 'completed' | 'on_hold',
+    progress: 0, // TODO: Calculate progress based on tasks completion
+    dueDate: project.deadline ? new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No due date',
+    teamSize: project.members?.length || 0,
+  })) || [];
+
+  const isLoading = analyticsLoading || projectsLoading;
+  const hasError = analyticsError || projectsError;
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-destructive mb-2">Error Loading Dashboard</h2>
+            <p className="text-muted-foreground">Please try refreshing the page or contact support if the problem persists.</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -98,7 +125,7 @@ const Dashboard = () => {
             </button>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
+            {projectCards.map((project) => (
               <ProjectCard key={project.name} {...project} />
             ))}
           </div>

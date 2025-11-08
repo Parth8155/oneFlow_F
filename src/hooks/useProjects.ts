@@ -6,7 +6,8 @@ export const useProjects = () => {
     queryKey: ['projects'],
     queryFn: async () => {
       try {
-        return await projectService.getAllProjects();
+        const response = await projectService.getAllProjects();
+        return response.projects; // Extract the projects array from the response
       } catch (error) {
         console.error('Failed to fetch projects:', error);
         throw error;

@@ -2,8 +2,8 @@ import api from './api';
 
 class AnalyticsService {
   async getDashboardAnalytics(filters?: any) {
-    const response = await api.get('/analytics', { params: filters });
-    return response.data;
+    const response = await api.get('/analytics/kpis', { params: filters });
+    return response.data.data; // Extract the data from the response wrapper
   }
 
   async getProjectAnalytics(projectId: string) {
