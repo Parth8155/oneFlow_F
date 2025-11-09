@@ -18,6 +18,36 @@ export interface ProjectFinancials {
   budgetUsage: number;
 }
 
+export interface SalesOrderRecord {
+  id: number;
+  order_number: string;
+  customer_name: string;
+  amount: number | string;
+  description?: string | null;
+  status: 'draft' | 'confirmed' | 'cancelled';
+  order_date: string;
+  project?: {
+    id: number;
+    name: string;
+  } | null;
+  createdBy?: {
+    id: number;
+    username: string;
+    full_name?: string | null;
+  } | null;
+}
+
+export interface SalesOrdersResponse {
+  salesOrders: SalesOrderRecord[];
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  grouped?: unknown;
+}
+
 class FinancialService {
   // Project Financial Documents
   async getProjectFinancialDocuments(projectId: string) {
@@ -58,11 +88,38 @@ class FinancialService {
   }
 
   // Sales Orders
-  async getAllSalesOrders(filters?: any) {
-    const response = await api.get<FinancialDocument[]>('/sales-orders', {
+  async getAllSalesOrders(filters?: Record<string, unknown>): Promise<SalesOrdersResponse> {
+    const response = await api.get('/sales-orders', {
       params: filters,
     });
-    return response.data;
+
+    const data = response.data;
+
+    if (Array.isArray(data)) {
+      return { salesOrders: data };
+    }
+
+    if (Array.isArray(data?.salesOrders)) {
+      return {
+        salesOrders: data.salesOrders,
+        pagination: data.pagination,
+        grouped: data.grouped,
+      };
+    }
+
+    if (Array.isArray(data?.data)) {
+      return {
+        salesOrders: data.data,
+        pagination: data.pagination,
+        grouped: data.grouped,
+      };
+    }
+
+    return {
+      salesOrders: [],
+      pagination: data?.pagination,
+      grouped: data?.grouped,
+    };
   }
 
   async createSalesOrder(data: any) {

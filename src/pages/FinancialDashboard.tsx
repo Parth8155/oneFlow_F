@@ -6,10 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import financialService from '@/services/financialService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  DollarSign, 
-  CreditCard, 
-  FileText, 
+import {
+  DollarSign,
+  CreditCard,
+  FileText,
   Receipt,
   BarChart3,
   Calendar
@@ -39,11 +39,6 @@ const FinancialDashboard = () => {
     queryFn: () => financialService.getAllExpenses(),
   });
 
-  const { data: vendorBillsData, isLoading: loadingBills } = useQuery({
-    queryKey: ['vendor-bills'],
-    queryFn: () => financialService.getAllVendorBills(),
-  });
-
   // Helper function to safely extract array data from API responses
   const extractArrayData = (data: any): any[] => {
     if (Array.isArray(data)) return data;
@@ -60,9 +55,8 @@ const FinancialDashboard = () => {
   const salesOrders = extractArrayData(salesOrdersData);
   const invoices = extractArrayData(invoicesData);
   const expenses = extractArrayData(expensesData);
-  const vendorBills = extractArrayData(vendorBillsData);
 
-  const isLoading = loadingSales || loadingInvoices || loadingExpenses || loadingBills;
+  const isLoading = loadingSales || loadingInvoices || loadingExpenses;
 
 
 
@@ -146,7 +140,7 @@ const FinancialDashboard = () => {
             Financial Summary
           </h2>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Sales Orders</CardTitle>
@@ -174,16 +168,6 @@ const FinancialDashboard = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{expenses.length}</div>
                 <p className="text-xs text-muted-foreground">Expense entries</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Vendor Bills</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{vendorBills.length}</div>
-                <p className="text-xs text-muted-foreground">Outstanding bills</p>
               </CardContent>
             </Card>
           </div>

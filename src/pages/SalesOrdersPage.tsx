@@ -9,33 +9,20 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import financialService from '@/services/financialService';
-import { 
-  FileText, 
-  Plus, 
-  Search, 
-  Filter, 
-  Edit, 
-  Trash2, 
-  DollarSign,
+import financialService, { SalesOrderRecord, SalesOrdersResponse } from '@/services/financialService';
+import {
+  FileText,
+  Plus,
+  Search,
+  Filter,
+  Trash2,
+  IndianRupee,
   Calendar,
   User,
   MoreHorizontal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-
-// Use the FinancialDocument interface from the service
-interface SalesOrder {
-  id: string;
-  type: 'sales_order';
-  projectId?: string;
-  amount: number;
-  status: string;
-  date: string;
-  partner: string;
-  description: string;
-}
+import { format, parseISO } from 'date-fns';
 
 const SalesOrdersPage = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -54,14 +41,12 @@ const SalesOrdersPage = () => {
   });
 
   // Fetch sales orders
-  const { data: salesOrdersData, isLoading, error } = useQuery({
+  const { data: salesOrdersData, isLoading, error } = useQuery<SalesOrdersResponse>({
     queryKey: ['sales-orders'],
     queryFn: () => financialService.getAllSalesOrders(),
   });
 
-  // Ensure salesOrders is always an array
-  const salesOrders = Array.isArray(salesOrdersData) ? salesOrdersData : 
-                      (salesOrdersData?.data && Array.isArray(salesOrdersData.data)) ? salesOrdersData.data : [];
+  const salesOrders: SalesOrderRecord[] = salesOrdersData?.salesOrders ?? [];
 
   // Create sales order mutation
   const createMutation = useMutation({
@@ -92,10 +77,37 @@ const SalesOrdersPage = () => {
     });
   };
 
-  // Filter sales orders
-  const filteredOrders = salesOrders.filter((order: any) => {
-    const matchesSearch = order.partner.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.id.toLowerCase().includes(searchTerm.toLowerCase());
+  const formatAmount = (value: SalesOrderRecord['amount']) => {
+    const numericValue = typeof value === 'string' ? parseFloat(value) : value ?? 0;
+    if (Number.isNaN(numericValue)) {
+      return '₹0.00';
+    }
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numericValue);
+  };
+
+  const formatOrderDate = (dateString?: string | null) => {
+    if (!dateString) {
+      return 'No date';
+    }
+    const parsedDate = parseISO(dateString);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return 'No date';
+    }
+    return format(parsedDate, 'MMM dd, yyyy');
+  };
+
+  const searchTermLower = searchTerm.trim().toLowerCase();
+
+  const filteredOrders = salesOrders.filter((order) => {
+    const matchesSearch =
+      !searchTermLower ||
+      order.customer_name.toLowerCase().includes(searchTermLower) ||
+      order.order_number.toLowerCase().includes(searchTermLower);
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -261,14 +273,24 @@ const SalesOrdersPage = () => {
           </CardContent>
         </Card>
 
+        {error && (
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-sm text-destructive">
+                {(error as Error)?.message ?? 'Failed to load sales orders.'}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Sales Orders Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredOrders.map((order: any) => (
+          {filteredOrders.map((order) => (
             <Card key={order.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold">
-                    SO-{order.id.toString().padStart(4, '0')}
+                    {order.order_number || `SO-${String(order.id).padStart(4, '0')}`}
                   </CardTitle>
                   <Badge className={cn(getStatusColor(order.status))}>
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -278,17 +300,17 @@ const SalesOrdersPage = () => {
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="h-4 w-4" />
-                  <span>{order.partner}</span>
+                  <span>{order.customer_name}</span>
                 </div>
                 
                 <div className="flex items-center gap-2 text-sm">
-                  <DollarSign className="h-4 w-4 text-green-600" />
-                  <span className="font-semibold">${order.amount?.toLocaleString() || '0'}</span>
+                  <IndianRupee className="h-4 w-4 text-green-600" />
+                  <span className="font-semibold">{formatAmount(order.amount)}</span>
                 </div>
                 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>{order.date ? format(new Date(order.date), 'MMM dd, yyyy') : 'No date'}</span>
+                  <span>{formatOrderDate(order.order_date)}</span>
                 </div>
                 
                 {order.description && (
@@ -299,7 +321,7 @@ const SalesOrdersPage = () => {
                 
                 <div className="flex items-center justify-between pt-2">
                   <span className="text-xs text-muted-foreground">
-                    {order.type?.replace('_', ' ').toUpperCase()}
+                    Sales Order
                   </span>
                   <Button variant="ghost" size="sm">
                     <MoreHorizontal className="h-4 w-4" />

@@ -164,13 +164,6 @@ const ExpensesPage = () => {
 
   // Calculate expense statistics
   const totalExpenses = expenses.reduce((sum: number, expense: any) => sum + (parseFloat(expense.amount) || 0), 0);
-  const thisMonthExpenses = expenses.filter((expense: any) => {
-    const expenseDate = new Date(expense.date);
-    const currentDate = new Date();
-    return expenseDate.getMonth() === currentDate.getMonth() && 
-           expenseDate.getFullYear() === currentDate.getFullYear();
-  }).reduce((sum: number, expense: any) => sum + (parseFloat(expense.amount) || 0), 0);
-
   // Group expenses by category for summary
   const expensesByCategory = expenses.reduce((acc: any, expense: any) => {
     const category = expense.type || 'other';
@@ -395,7 +388,7 @@ const ExpensesPage = () => {
         </Dialog>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
@@ -409,21 +402,7 @@ const ExpensesPage = () => {
               </div>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Calendar className="h-4 w-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">This Month</p>
-                  <p className="text-xl font-bold">₹{thisMonthExpenses.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
@@ -433,20 +412,6 @@ const ExpensesPage = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Categories</p>
                   <p className="text-xl font-bold">{Object.keys(expensesByCategory).length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <PieChart className="h-4 w-4 text-yellow-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg per Month</p>
-                  <p className="text-xl font-bold">₹{Math.round(totalExpenses / 12).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>

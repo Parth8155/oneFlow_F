@@ -53,21 +53,11 @@ const Login = () => {
           <div className="absolute top-1/3 -right-12 w-8 h-8 bg-accent/25 rounded-full"></div>
           
           {/* Main illustration area */}
-          <div className="relative bg-white rounded-2xl p-8 shadow-lg">
-            <div className="w-32 h-32 mx-auto mb-6 bg-accent/20 rounded-full flex items-center justify-center">
-              <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center">
-                <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-foreground">OneFlow App</h3>
-              <div className="flex items-center justify-center space-x-2">
-                <span className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full">Design</span>
-                <span className="text-accent">+1k</span>
-              </div>
+          <div className="relative bg-white rounded-2xl p-8 shadow-lg text-center">
+            <h3 className="text-xl font-semibold text-foreground">OneFlow App</h3>
+            <div className="mt-4 flex items-center justify-center space-x-2">
+              <span className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full">Design</span>
+              <span className="text-accent">+1k</span>
             </div>
           </div>
           
