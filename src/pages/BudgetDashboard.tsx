@@ -10,11 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  PieChart, 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
+import { cn } from '@/lib/utils';
+import financialService, { BudgetBreakdownResponse, BudgetSummaryRecord } from '@/services/financialService';
+import {
+  PieChart,
+  TrendingUp,
   AlertTriangle,
   CheckCircle,
   CreditCard,
@@ -27,68 +27,29 @@ import {
   Edit,
   Trash2,
   Calendar,
-  FileText
+  FileText,
 } from 'lucide-react';
-import financialService from '@/services/financialService';
-import { cn } from '@/lib/utils';
 
-interface BudgetSummary {
-  projectId: number;
-  projectName: string;
-  projectStatus: string;
-  budget: number;
-  spent: number;
-  remaining: number;
-  usagePercentage: number;
-  isOverBudget: boolean;
-  isNearBudget: boolean;
-}
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
 
-interface BudgetBreakdown {
-  project: {
-    id: number;
-    name: string;
-    budget: number;
-  };
-  budget: {
-    total: number;
-    spent: number;
-    remaining: number;
-    usagePercentage: number;
-    isOverBudget: boolean;
-  };
-  breakdown: {
-    vendorBills: {
-      total: number;
-      percentage: number;
-      count: number;
-      items: any[];
-    };
-    expenses: {
-      total: number;
-      percentage: number;
-      count: number;
-      items: any[];
-    };
-    timesheetCosts: {
-      total: number;
-      percentage: number;
-      count: number;
-      items: any[];
-    };
-    customerInvoices: {
-      total: number;
-      percentage: number;
-      count: number;
-      items: any[];
-    };
-  };
-  alerts: {
-    isOverBudget: boolean;
-    isNearBudget: boolean;
-    percentageUsed: number;
-  };
-}
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (error && typeof error === 'object') {
+    if ('error' in error && typeof (error as any).error === 'string') {
+      return (error as any).error as string;
+    }
+    if ('message' in error && typeof (error as any).message === 'string') {
+      return (error as any).message as string;
+    }
+  }
+
+  return 'An unexpected error occurred.';
+};
 
 const BudgetDashboard = () => {
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
@@ -98,13 +59,33 @@ const BudgetDashboard = () => {
   const queryClient = useQueryClient();
 
   // Fetch all projects budget summary
-  const { data: budgetSummaryResponse = [], isLoading: loadingSummary } = useQuery({
+  const {
+    data: budgetSummaryResponse = [],
+    isLoading: loadingSummary,
+    isError: summaryErrorFlag,
+    error: summaryError,
+    isFetching: fetchingSummary,
+  } = useQuery<BudgetSummaryRecord[]>({
     queryKey: ['budget-summary'],
     queryFn: () => financialService.getAllProjectsBudgetSummary(),
+    retry: 1,
   });
 
   // Ensure budgetSummary is always an array
   const budgetSummary = Array.isArray(budgetSummaryResponse) ? budgetSummaryResponse : [];
+
+  useEffect(() => {
+    if (budgetSummary.length === 0) {
+      setSelectedProject(null);
+      return;
+    }
+
+    const hasSelectedProject = selectedProject !== null && budgetSummary.some((project) => project.projectId === selectedProject);
+
+    if (!hasSelectedProject) {
+      setSelectedProject(budgetSummary[0].projectId);
+    }
+  }, [budgetSummary, selectedProject]);
 
   // Mutations for update and delete operations
   const updateExpenseMutation = useMutation({
@@ -162,11 +143,27 @@ const BudgetDashboard = () => {
   });
 
   // Fetch detailed breakdown for selected project
-  const { data: budgetBreakdown, isLoading: loadingBreakdown } = useQuery({
+  const {
+    data: budgetBreakdown,
+    isLoading: loadingBreakdown,
+    isFetching: fetchingBreakdown,
+    isError: breakdownErrorFlag,
+    error: breakdownError,
+  } = useQuery<BudgetBreakdownResponse>({
     queryKey: ['budget-breakdown', selectedProject],
-    queryFn: () => selectedProject ? financialService.getProjectBudgetBreakdown(selectedProject.toString()) : null,
+    queryFn: () => {
+      if (!selectedProject) {
+        throw new Error('No project selected');
+      }
+      return financialService.getProjectBudgetBreakdown(selectedProject.toString());
+    },
     enabled: !!selectedProject,
+    retry: 1,
   });
+
+  useEffect(() => {
+    setExpandedSection(null);
+  }, [selectedProject]);
 
   const getBudgetStatusColor = (usagePercentage: number, isOverBudget: boolean) => {
     if (isOverBudget) return 'text-red-600 bg-red-50 border-red-200';
@@ -255,6 +252,27 @@ const BudgetDashboard = () => {
     );
   }
 
+  if (summaryErrorFlag) {
+  const message = getErrorMessage(summaryError);
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="max-w-lg space-y-4 text-center">
+            <Alert className="border-red-200 bg-red-50">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-700">
+                {message}
+              </AlertDescription>
+            </Alert>
+            <p className="text-sm text-muted-foreground">
+              Please refresh the page or verify that you have the necessary permissions to view budget data.
+            </p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6 pb-8">
@@ -276,11 +294,17 @@ const BudgetDashboard = () => {
         {/* Projects Budget List */}
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Projects Budget Status</CardTitle>
+              {fetchingSummary && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-slate-500" />
+                  Updating
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
-              {budgetSummary.map((project: BudgetSummary) => (
+              {budgetSummary.map((project: BudgetSummaryRecord) => (
                 <div 
                   key={project.projectId}
                   className={cn(
@@ -334,7 +358,21 @@ const BudgetDashboard = () => {
               <CardTitle>Budget Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
-              {selectedProject && budgetBreakdown ? (
+              {loadingBreakdown || fetchingBreakdown ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center text-muted-foreground">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto mb-3" />
+                    <p>Loading project budget...</p>
+                  </div>
+                </div>
+              ) : breakdownErrorFlag ? (
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-700">
+                    {getErrorMessage(breakdownError)}
+                  </AlertDescription>
+                </Alert>
+              ) : selectedProject && budgetBreakdown ? (
                 <div className="space-y-6">
                   {/* Project Info */}
                   <div>
@@ -428,7 +466,7 @@ const BudgetDashboard = () => {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-green-800">₹{parseFloat(invoice.amount).toLocaleString()}</span>
+                                    <span className="font-semibold text-green-800">₹{Number(invoice.amount ?? 0).toLocaleString()}</span>
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -494,7 +532,7 @@ const BudgetDashboard = () => {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="font-semibold">₹{parseFloat(bill.amount).toLocaleString()}</span>
+                                    <span className="font-semibold">₹{Number(bill.amount ?? 0).toLocaleString()}</span>
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -559,7 +597,7 @@ const BudgetDashboard = () => {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="font-semibold">₹{parseFloat(expense.amount).toLocaleString()}</span>
+                                    <span className="font-semibold">₹{Number(expense.amount ?? 0).toLocaleString()}</span>
                                     <Button
                                       size="sm"
                                       variant="ghost"

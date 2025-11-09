@@ -18,6 +18,52 @@ export interface ProjectFinancials {
   budgetUsage: number;
 }
 
+export interface BudgetSummaryRecord {
+  projectId: number;
+  projectName: string;
+  projectStatus?: string;
+  budget: number;
+  spent: number;
+  remaining: number;
+  usagePercentage: number;
+  isOverBudget: boolean;
+  isNearBudget: boolean;
+}
+
+export interface BudgetBreakdownCategory {
+  total: number;
+  percentage: number;
+  count: number;
+  items: any[];
+}
+
+export interface BudgetBreakdownResponse {
+  project: {
+    id: number;
+    name: string;
+    budget: number;
+  };
+  budget: {
+    total: number;
+    spent: number;
+    remaining: number;
+    usagePercentage: number;
+    isOverBudget: boolean;
+  };
+  revenue?: BudgetBreakdownCategory;
+  breakdown: {
+    customerInvoices: BudgetBreakdownCategory;
+    vendorBills: BudgetBreakdownCategory;
+    expenses: BudgetBreakdownCategory;
+    timesheetCosts: BudgetBreakdownCategory;
+  };
+  alerts: {
+    isOverBudget: boolean;
+    isNearBudget: boolean;
+    percentageUsed: number;
+  };
+}
+
 export interface SalesOrderRecord {
   id: number;
   order_number: string;
@@ -48,6 +94,154 @@ export interface SalesOrdersResponse {
   grouped?: unknown;
 }
 
+const toNumber = (value: unknown): number => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === 'string') {
+    const cleaned = value.replace(/,/g, '').trim();
+    if (!cleaned) {
+      return 0;
+    }
+    const parsed = Number.parseFloat(cleaned);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+
+  return 0;
+};
+
+const toBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase();
+    return normalized === 'true' || normalized === 't' || normalized === '1';
+  }
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  return Boolean(value);
+};
+
+const normalizeSummaryEntry = (entry: any): BudgetSummaryRecord => ({
+  projectId: Number(entry?.projectId ?? entry?.project_id ?? entry?.id ?? 0),
+  projectName: entry?.projectName ?? entry?.project_name ?? entry?.name ?? 'Unknown Project',
+  projectStatus: entry?.projectStatus ?? entry?.project_status ?? entry?.status,
+  budget: toNumber(entry?.budget),
+  spent: toNumber(entry?.spent),
+  remaining: toNumber(entry?.remaining),
+  usagePercentage: toNumber(entry?.usagePercentage ?? entry?.usage_percentage),
+  isOverBudget: toBoolean(entry?.isOverBudget ?? entry?.is_over_budget),
+  isNearBudget: toBoolean(entry?.isNearBudget ?? entry?.is_near_budget),
+});
+
+const normalizeItems = (items: unknown, amountKey: 'amount' | 'cost'): any[] => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.map((raw) => {
+    const item = typeof raw?.toJSON === 'function' ? raw.toJSON() : raw;
+    return {
+      ...item,
+      [amountKey]: toNumber(item?.[amountKey]),
+    };
+  });
+};
+
+const normalizeBreakdownCategory = (
+  category: any,
+  amountKey: 'amount' | 'cost'
+): BudgetBreakdownCategory => ({
+  total: toNumber(category?.total),
+  percentage: toNumber(category?.percentage),
+  count: Number(category?.count ?? 0),
+  items: normalizeItems(category?.items, amountKey),
+});
+
+const extractArray = (value: any): any[] | null => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value && typeof value === 'object') {
+    const possibleKeys = ['data', 'items', 'results', 'rows', 'list'];
+    for (const key of possibleKeys) {
+      if (Array.isArray(value[key])) {
+        return value[key];
+      }
+    }
+  }
+
+  return null;
+};
+
+const extractObject = (value: any): any => {
+  if (!value) {
+    return null;
+  }
+
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    if (value.data && typeof value.data === 'object' && !Array.isArray(value.data)) {
+      return value.data;
+    }
+  }
+
+  return value;
+};
+
+const normalizeBudgetBreakdown = (raw: any): BudgetBreakdownResponse | null => {
+  if (!raw) {
+    return null;
+  }
+
+  const source = extractObject(raw);
+
+  if (!source) {
+    return null;
+  }
+
+  return {
+    project: {
+      id: Number(source?.project?.id ?? 0),
+      name: source?.project?.name ?? 'Unknown Project',
+      budget: toNumber(source?.project?.budget ?? source?.budget?.total),
+    },
+    budget: {
+      total: toNumber(source?.budget?.total),
+      spent: toNumber(source?.budget?.spent),
+      remaining: toNumber(source?.budget?.remaining),
+      usagePercentage: toNumber(source?.budget?.usagePercentage),
+      isOverBudget: toBoolean(source?.budget?.isOverBudget),
+    },
+    revenue: source?.revenue
+      ? {
+          total: toNumber(source.revenue.total),
+          percentage: toNumber(source.revenue.percentage),
+          count: Number(source.revenue.count ?? 0),
+          items: normalizeItems(source.revenue.items, 'amount'),
+        }
+      : undefined,
+    breakdown: {
+      customerInvoices: normalizeBreakdownCategory(source?.breakdown?.customerInvoices, 'amount'),
+      vendorBills: normalizeBreakdownCategory(source?.breakdown?.vendorBills, 'amount'),
+      expenses: normalizeBreakdownCategory(source?.breakdown?.expenses, 'amount'),
+      timesheetCosts: normalizeBreakdownCategory(source?.breakdown?.timesheetCosts, 'cost'),
+    },
+    alerts: {
+      isOverBudget: toBoolean(source?.alerts?.isOverBudget),
+      isNearBudget: toBoolean(source?.alerts?.isNearBudget),
+      percentageUsed: toNumber(source?.alerts?.percentageUsed),
+    },
+  };
+};
+
 class FinancialService {
   // Project Financial Documents
   async getProjectFinancialDocuments(projectId: string) {
@@ -77,14 +271,34 @@ class FinancialService {
     return response.data;
   }
 
-  async getProjectBudgetBreakdown(projectId: string) {
+  async getProjectBudgetBreakdown(projectId: string): Promise<BudgetBreakdownResponse> {
     const response = await api.get(`/financial/projects/${projectId}/budget-breakdown`);
-    return response.data.data || response.data;
+    const rawPayload = response.data ?? null;
+    const breakdown = normalizeBudgetBreakdown(rawPayload);
+
+    if (!breakdown) {
+      throw new Error('Unable to load project budget breakdown.');
+    }
+
+    return breakdown;
   }
 
-  async getAllProjectsBudgetSummary() {
+  async getAllProjectsBudgetSummary(): Promise<BudgetSummaryRecord[]> {
     const response = await api.get(`/financial/budget-summary`);
-    return response.data.data || response.data;
+    const payload = response.data ?? null;
+
+    const arrayCandidate =
+      extractArray(payload?.data) ??
+      extractArray(payload?.results) ??
+      extractArray(payload) ??
+      extractArray(payload?.payload);
+
+    if (!arrayCandidate) {
+      const message = payload?.message || 'Invalid budget summary response.';
+      throw new Error(message);
+    }
+
+    return arrayCandidate.map(normalizeSummaryEntry);
   }
 
   // Sales Orders

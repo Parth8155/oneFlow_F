@@ -7,7 +7,6 @@ import {
   CheckSquare, 
   DollarSign, 
   BarChart3, 
-  Settings,
   Users,
   Shield,
   FileText,
@@ -64,11 +63,6 @@ const navItems: NavItem[] = [
     icon: <TrendingUp className="h-5 w-5" />,
     href: '/budget',
     roles: ['admin', 'project_manager', 'sales_finance'],
-  },
-  {
-    label: 'Settings',
-    icon: <Settings className="h-5 w-5" />,
-    href: '/settings',
   },
   {
     label: 'Admin',
