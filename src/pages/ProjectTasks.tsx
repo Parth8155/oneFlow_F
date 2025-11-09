@@ -142,6 +142,12 @@ export const ProjectTasks = () => {
     const taskId = parseInt(draggableId);
     const newStatus = destination.droppableId as Task['status'];
 
+    // Prevent team members from moving tasks to completed status
+    if (user?.role === 'team_member' && newStatus === 'completed') {
+      toast.error('Only admins and project managers can mark tasks as completed');
+      return;
+    }
+
     try {
       await taskService.updateTaskStatus(taskId, newStatus);
       
@@ -161,19 +167,34 @@ export const ProjectTasks = () => {
 
   const canManageProject = user && (
     user.role === 'admin' || 
-    user.role === 'project_manager' || 
-    user.role === 'team_member' ||
+    user.role === 'project_manager' ||
     (project && project.project_manager_id === parseInt(user.id))
   );
+
+  const canLogHours = (task: Task) => {
+    // Only team members can log hours - admins and managers can only view the data
+    return user && user.role === 'team_member';
+  };
 
   const handleDeleteTask = async (taskId: number) => {
     try {
       await taskService.deleteTask(taskId.toString());
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
       toast.success('Task deleted successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete task:', error);
-      toast.error('Failed to delete task');
+      
+      // Handle specific error cases
+      if (error.response?.status === 409) {
+        const message = error.response?.data?.message || 'Cannot delete task: Task has existing timesheet entries';
+        toast.error(message);
+      } else if (error.response?.status === 403) {
+        toast.error('Permission denied: Only project managers can delete tasks');
+      } else if (error.response?.status === 404) {
+        toast.error('Task not found');
+      } else {
+        toast.error('Failed to delete task');
+      }
     }
   };
 
@@ -367,23 +388,25 @@ export const ProjectTasks = () => {
                         {currentMembers.length === 0 ? (
                           <p className="text-sm text-muted-foreground">No team members assigned yet.</p>
                         ) : (
-                          currentMembers
-                            .filter(member => (member.user?.role || member.role) === 'team_member')
-                            .map((member: any) => (
-                              <div key={member.user?.id || member.id} className="flex items-center justify-between p-2 border rounded">
-                                <span className="text-sm">
-                                  {member.user?.full_name || member.user?.username || member.full_name || member.username}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveTeamMember((member.user?.id || member.id).toString())}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  Remove
-                                </Button>
-                              </div>
-                            ))
+                          <>
+                            {currentMembers
+                              .filter(member => (member.user?.role || member.role) === 'team_member')
+                              .map((member: any) => (
+                                <div key={member.user?.id || member.id} className="flex items-center justify-between p-2 border rounded">
+                                  <span className="text-sm">
+                                    {member.user?.full_name || member.user?.username || member.full_name || member.username}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveTeamMember((member.user?.id || member.id).toString())}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              ))}
+                          </>
                         )}
                       </div>
                     </div>
@@ -467,7 +490,7 @@ export const ProjectTasks = () => {
                                         <Edit className="mr-2 h-4 w-4" />
                                         Edit Task
                                       </DropdownMenuItem>
-                                      {(task.assigned_to === user?.id || user?.role === 'admin' || user?.role === 'project_manager') && (
+                                      {canLogHours(task) && (
                                         <DropdownMenuItem 
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -555,6 +578,27 @@ export const ProjectTasks = () => {
                                       {task.estimated_hours && (
                                         <span className="text-gray-400">/ {task.estimated_hours}h est.</span>
                                       )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Timesheet descriptions */}
+                                  {task.timesheets && task.timesheets.length > 0 && (
+                                    <div className="space-y-1">
+                                      {task.timesheets.map((timesheet) => (
+                                        <div key={timesheet.id} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                                          <div className="flex items-center gap-1 mb-1">
+                                            <Clock className="h-3 w-3" />
+                                            <span className="font-medium">{timesheet.hours}h</span>
+                                            <span>by {timesheet.user.full_name || timesheet.user.username}</span>
+                                            <span className="text-gray-400">on {new Date(timesheet.date).toLocaleDateString()}</span>
+                                          </div>
+                                          {timesheet.description && (
+                                            <div className="text-xs text-gray-700 italic">
+                                              "{timesheet.description}"
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
                                     </div>
                                   )}
                                   

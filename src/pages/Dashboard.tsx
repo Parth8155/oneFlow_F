@@ -1,51 +1,15 @@
 import { AppLayout } from '@/components/layout/AppLayout';
-import { KPICard } from '@/components/dashboard/KPICard';
 import { ProjectCard } from '@/components/dashboard/ProjectCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { useDashboardAnalytics, useProjects } from '@/hooks';
-import { FolderKanban, CheckSquare, DollarSign, TrendingUp, Loader2 } from 'lucide-react';
+import { useProjects } from '@/hooks';
+import { TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Check if user has analytics access (admin, project_manager, sales_finance)
-  const hasAnalyticsAccess = user && ['admin', 'project_manager', 'sales_finance'].includes(user.role);
-  
-  // Only fetch analytics if user has access
-  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useDashboardAnalytics({
-    enabled: hasAnalyticsAccess
-  });
   const { data: projects, isLoading: projectsLoading, error: projectsError } = useProjects();
-
-  // Transform analytics data for KPI cards (only when user has access)
-  const kpiData = hasAnalyticsAccess && analytics ? [
-    { 
-      title: 'Active Projects', 
-      value: analytics.activeProjects || 0, 
-      icon: FolderKanban, 
-      trend: { value: analytics.projectGrowth || 0, isPositive: (analytics.projectGrowth || 0) >= 0 } 
-    },
-    { 
-      title: 'Open Tasks', 
-      value: analytics.openTasks || 0, 
-      icon: CheckSquare, 
-      trend: { value: analytics.taskGrowth || 0, isPositive: (analytics.taskGrowth || 0) >= 0 } 
-    },
-    { 
-      title: 'Total Revenue', 
-      value: `$${analytics.totalRevenue?.toLocaleString() || '0'}`, 
-      icon: DollarSign, 
-      trend: { value: analytics.revenueGrowth || 0, isPositive: (analytics.revenueGrowth || 0) >= 0 } 
-    },
-    { 
-      title: 'Team Efficiency', 
-      value: `${analytics.teamEfficiency || 0}%`, 
-      icon: TrendingUp, 
-      trend: { value: analytics.efficiencyGrowth || 0, isPositive: (analytics.efficiencyGrowth || 0) >= 0 } 
-    },
-  ] : [];
 
   // Transform projects data for ProjectCard components
   const projectCards = projects?.map(project => ({
@@ -56,8 +20,8 @@ const Dashboard = () => {
     teamSize: project.members?.length || 0,
   })) || [];
 
-  const isLoading = (hasAnalyticsAccess ? analyticsLoading : false) || projectsLoading;
-  const hasError = (hasAnalyticsAccess ? analyticsError : false) || projectsError;
+  const isLoading = projectsLoading;
+  const hasError = projectsError;
 
   if (isLoading) {
     return (
@@ -98,7 +62,7 @@ const Dashboard = () => {
                   Good morning, {user?.full_name || user?.username || 'User'}! 👋
                 </h1>
                 <p className="text-muted-foreground mt-1 text-lg">
-                  {user?.role === 'admin' && 'System overview and key metrics'}
+                  {user?.role === 'admin' && 'System overview and project management'}
                   {user?.role === 'project_manager' && 'Your project portfolio at a glance'}
                   {user?.role === 'team_member' && 'Your tasks and assignments'}
                   {user?.role === 'sales_finance' && 'Financial overview and analytics'}
@@ -107,21 +71,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
-        {/* KPI Cards - Only for admin, project_manager, sales_finance */}
-        {hasAnalyticsAccess && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <div className="w-1 h-6 bg-blue-600 rounded-full" />
-              Key Metrics
-            </h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {kpiData.map((kpi) => (
-                <KPICard key={kpi.title} {...kpi} />
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Projects Section */}
         <div className="space-y-4">

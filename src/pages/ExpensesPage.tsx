@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import financialService from '@/services/financialService';
 import { 
   CreditCard, 
@@ -21,13 +22,17 @@ import {
   MoreHorizontal,
   TrendingUp,
   TrendingDown,
-  PieChart
+  PieChart,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
 const ExpensesPage = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const queryClient = useQueryClient();
@@ -49,7 +54,7 @@ const ExpensesPage = () => {
 
   // Ensure expenses is always an array
   const expenses = Array.isArray(expensesData) ? expensesData : 
-                   (expensesData?.data && Array.isArray(expensesData.data)) ? expensesData.data : [];
+                   (expensesData?.expenses && Array.isArray(expensesData.expenses)) ? expensesData.expenses : [];
 
   // Create expense mutation
   const createMutation = useMutation({
@@ -61,6 +66,26 @@ const ExpensesPage = () => {
     },
   });
 
+  // Update expense mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      financialService.updateExpense(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      setIsEditDialogOpen(false);
+      setEditingExpense(null);
+      resetForm();
+    },
+  });
+
+  // Delete expense mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => financialService.deleteExpense(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    },
+  });
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -69,14 +94,51 @@ const ExpensesPage = () => {
       description: '',
       expense_date: new Date().toISOString().split('T')[0],
     });
+    setEditingExpense(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({
-      ...formData,
-      amount: parseFloat(formData.amount),
+    if (editingExpense) {
+      // Update existing expense
+      updateMutation.mutate({
+        id: editingExpense.id,
+        data: {
+          description: formData.title || formData.description,
+          amount: parseFloat(formData.amount),
+          expense_date: formData.expense_date,
+          type: formData.category,
+          is_billable: false,
+        },
+      });
+    } else {
+      // Create new expense
+      createMutation.mutate({
+        description: formData.title || formData.description,
+        amount: parseFloat(formData.amount),
+        expense_date: formData.expense_date,
+        type: formData.category,
+        is_billable: false,
+      });
+    }
+  };
+
+  const handleEditExpense = (expense: any) => {
+    setEditingExpense(expense);
+    setFormData({
+      title: expense.description || '',
+      amount: expense.amount?.toString() || '',
+      category: expense.type || 'office_supplies',
+      description: expense.description || '',
+      expense_date: expense.expense_date || new Date().toISOString().split('T')[0],
     });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteExpense = (expenseId: string) => {
+    if (confirm('Are you sure you want to delete this expense?')) {
+      deleteMutation.mutate(expenseId);
+    }
   };
 
   // Define expense categories
@@ -101,18 +163,18 @@ const ExpensesPage = () => {
   });
 
   // Calculate expense statistics
-  const totalExpenses = expenses.reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0);
+  const totalExpenses = expenses.reduce((sum: number, expense: any) => sum + (parseFloat(expense.amount) || 0), 0);
   const thisMonthExpenses = expenses.filter((expense: any) => {
     const expenseDate = new Date(expense.date);
     const currentDate = new Date();
     return expenseDate.getMonth() === currentDate.getMonth() && 
            expenseDate.getFullYear() === currentDate.getFullYear();
-  }).reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0);
+  }).reduce((sum: number, expense: any) => sum + (parseFloat(expense.amount) || 0), 0);
 
   // Group expenses by category for summary
   const expensesByCategory = expenses.reduce((acc: any, expense: any) => {
     const category = expense.type || 'other';
-    acc[category] = (acc[category] || 0) + (expense.amount || 0);
+    acc[category] = (acc[category] || 0) + (parseFloat(expense.amount) || 0);
     return acc;
   }, {});
 
@@ -245,6 +307,93 @@ const ExpensesPage = () => {
           </Dialog>
         </div>
 
+        {/* Edit Expense Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Expense</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-title">Title</Label>
+                <Input
+                  id="edit-title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                  placeholder="Enter expense title"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-amount">Amount</Label>
+                <Input
+                  id="edit-amount"
+                  type="number"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-category">Category</Label>
+                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expenseCategories.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-expense_date">Expense Date</Label>
+                <Input
+                  id="edit-expense_date"
+                  type="date"
+                  value={formData.expense_date}
+                  onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  placeholder="Optional description"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button type="submit" disabled={updateMutation.isPending} className="flex-1">
+                  {updateMutation.isPending ? 'Updating...' : 'Update Expense'}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    resetForm();
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
@@ -255,7 +404,7 @@ const ExpensesPage = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Expenses</p>
-                  <p className="text-xl font-bold">${totalExpenses.toLocaleString()}</p>
+                  <p className="text-xl font-bold">₹{totalExpenses.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -269,7 +418,7 @@ const ExpensesPage = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">This Month</p>
-                  <p className="text-xl font-bold">${thisMonthExpenses.toLocaleString()}</p>
+                  <p className="text-xl font-bold">₹{thisMonthExpenses.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -297,7 +446,7 @@ const ExpensesPage = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Avg per Month</p>
-                  <p className="text-xl font-bold">${Math.round(totalExpenses / 12).toLocaleString()}</p>
+                  <p className="text-xl font-bold">₹{Math.round(totalExpenses / 12).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -321,7 +470,7 @@ const ExpensesPage = () => {
                       {expenseCategories.find(cat => cat.value === category)?.label || category}
                     </Badge>
                   </div>
-                  <span className="font-semibold">${amount.toLocaleString()}</span>
+                  <span className="font-semibold">₹{(parseFloat(amount) || 0).toLocaleString()}</span>
                 </div>
               ))}
             </div>
@@ -376,7 +525,7 @@ const ExpensesPage = () => {
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <DollarSign className="h-4 w-4 text-red-600" />
-                  <span className="font-semibold text-red-600">${expense.amount?.toLocaleString() || '0'}</span>
+                  <span className="font-semibold text-red-600">₹{(parseFloat(expense.amount) || 0).toLocaleString()}</span>
                 </div>
                 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -395,9 +544,26 @@ const ExpensesPage = () => {
                   <span className="text-xs text-muted-foreground">
                     {expense.type?.replace('_', ' ').toUpperCase()}
                   </span>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditExpense(expense)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteExpense(expense.id)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardContent>
             </Card>

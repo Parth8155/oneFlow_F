@@ -249,7 +249,7 @@ const Projects = () => {
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         <span className="text-muted-foreground">Budget:</span>
-                        <span className="font-medium">${project.budget.toLocaleString()}</span>
+                        <span className="font-medium">₹{project.budget.toLocaleString()}</span>
                       </div>
                     )}
                   </div>

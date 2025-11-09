@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import financialService from '@/services/financialService';
@@ -7,35 +8,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
   CreditCard, 
   FileText, 
   Receipt,
-  AlertCircle,
   BarChart3,
-  PieChart,
   Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface FinancialKPI {
-  title: string;
-  value: string | number;
-  change?: number;
-  trend?: 'up' | 'down' | 'neutral';
-  icon: React.ReactNode;
-  description?: string;
-}
-
 const FinancialDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
 
   // Fetch financial data
-  const { data: salesOrdersData, isLoading: loadingSales } = useQuery({
+  const { data: salesOrdersData, isLoading: loadingSales, error: salesOrdersError } = useQuery({
     queryKey: ['sales-orders'],
     queryFn: () => financialService.getAllSalesOrders(),
+    retry: 1,
   });
 
   const { data: invoicesData, isLoading: loadingInvoices } = useQuery({
@@ -53,133 +43,35 @@ const FinancialDashboard = () => {
     queryFn: () => financialService.getAllVendorBills(),
   });
 
+  // Helper function to safely extract array data from API responses
+  const extractArrayData = (data: any): any[] => {
+    if (Array.isArray(data)) return data;
+    if (data?.data && Array.isArray(data.data)) return data.data;
+    if (data?.results && Array.isArray(data.results)) return data.results;
+    if (data?.salesOrders && Array.isArray(data.salesOrders)) return data.salesOrders;
+    if (data?.invoices && Array.isArray(data.invoices)) return data.invoices;
+    if (data?.expenses && Array.isArray(data.expenses)) return data.expenses;
+    if (data?.vendorBills && Array.isArray(data.vendorBills)) return data.vendorBills;
+    return [];
+  };
+
   // Ensure all data is properly structured as arrays
-  const salesOrders = Array.isArray(salesOrdersData) ? salesOrdersData : 
-                     (salesOrdersData?.data && Array.isArray(salesOrdersData.data)) ? salesOrdersData.data : [];
-  const invoices = Array.isArray(invoicesData) ? invoicesData : 
-                   (invoicesData?.data && Array.isArray(invoicesData.data)) ? invoicesData.data : [];
-  const expenses = Array.isArray(expensesData) ? expensesData : 
-                   (expensesData?.data && Array.isArray(expensesData.data)) ? expensesData.data : [];
-  const vendorBills = Array.isArray(vendorBillsData) ? vendorBillsData : 
-                      (vendorBillsData?.data && Array.isArray(vendorBillsData.data)) ? vendorBillsData.data : [];
+  const salesOrders = extractArrayData(salesOrdersData);
+  const invoices = extractArrayData(invoicesData);
+  const expenses = extractArrayData(expensesData);
+  const vendorBills = extractArrayData(vendorBillsData);
+
+  // Debug logging to check API responses
+  console.log('API Responses:', {
+    salesOrdersData,
+    salesOrdersError,
+    salesOrders: salesOrders.length,
+    loadingSales
+  });
 
   const isLoading = loadingSales || loadingInvoices || loadingExpenses || loadingBills;
 
-  // Calculate KPIs from data
-  const calculateKPIs = (): FinancialKPI[] => {
-    if (!salesOrders || !invoices || !expenses || !vendorBills) {
-      return [];
-    }
 
-    // Calculate total revenue from paid invoices
-    const totalRevenue = invoices
-      .filter((inv: any) => inv.status === 'paid')
-      .reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0);
-
-    // Calculate total expenses
-    const totalExpenses = expenses
-      .reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
-
-    // Calculate pending invoices
-    const pendingInvoices = invoices
-      .filter((inv: any) => inv.status === 'sent' || inv.status === 'draft')
-      .reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0);
-
-    // Calculate overdue invoices
-    const overdueInvoices = invoices
-      .filter((inv: any) => inv.status === 'overdue')
-      .reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0);
-
-    // Calculate net profit
-    const netProfit = totalRevenue - totalExpenses;
-    const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-
-    return [
-      {
-        title: 'Total Revenue',
-        value: `$${totalRevenue.toLocaleString()}`,
-        change: 12.5,
-        trend: 'up',
-        icon: <DollarSign className="h-6 w-6" />,
-        description: 'Revenue from paid invoices'
-      },
-      {
-        title: 'Net Profit',
-        value: `$${netProfit.toLocaleString()}`,
-        change: netProfit >= 0 ? 8.2 : -8.2,
-        trend: netProfit >= 0 ? 'up' : 'down',
-        icon: <TrendingUp className="h-6 w-6" />,
-        description: 'Revenue minus expenses'
-      },
-      {
-        title: 'Pending Invoices',
-        value: `$${pendingInvoices.toLocaleString()}`,
-        change: -5.1,
-        trend: 'down',
-        icon: <FileText className="h-6 w-6" />,
-        description: 'Awaiting payment'
-      },
-      {
-        title: 'Overdue Invoices',
-        value: `$${overdueInvoices.toLocaleString()}`,
-        change: overdueInvoices > 0 ? 15.3 : 0,
-        trend: overdueInvoices > 0 ? 'up' : 'neutral',
-        icon: <AlertCircle className="h-6 w-6" />,
-        description: 'Requires immediate attention'
-      },
-      {
-        title: 'Total Expenses',
-        value: `$${totalExpenses.toLocaleString()}`,
-        change: 3.8,
-        trend: 'up',
-        icon: <CreditCard className="h-6 w-6" />,
-        description: 'All recorded expenses'
-      },
-      {
-        title: 'Profit Margin',
-        value: `${profitMargin.toFixed(1)}%`,
-        change: profitMargin >= 20 ? 2.1 : -2.1,
-        trend: profitMargin >= 20 ? 'up' : 'down',
-        icon: <BarChart3 className="h-6 w-6" />,
-        description: 'Net profit percentage'
-      }
-    ];
-  };
-
-  const kpis = calculateKPIs();
-
-  const KPICard = ({ kpi }: { kpi: FinancialKPI }) => (
-    <Card className="relative overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {kpi.title}
-        </CardTitle>
-        <div className="p-2 bg-slate-100 rounded-lg">
-          {kpi.icon}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{kpi.value}</div>
-        {kpi.change !== undefined && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-            {kpi.trend === 'up' && <TrendingUp className="h-3 w-3 text-green-600" />}
-            {kpi.trend === 'down' && <TrendingDown className="h-3 w-3 text-red-600" />}
-            <span className={cn(
-              kpi.trend === 'up' && 'text-green-600',
-              kpi.trend === 'down' && 'text-red-600',
-              kpi.trend === 'neutral' && 'text-muted-foreground'
-            )}>
-              {kpi.change > 0 ? '+' : ''}{kpi.change}%
-            </span>
-            <span>vs last {selectedPeriod}</span>
-          </div>
-        )}
-        {kpi.description && (
-          <p className="text-xs text-muted-foreground mt-2">{kpi.description}</p>
-        )}
-      </CardContent>
-    </Card>
-  );
 
   if (isLoading) {
     return (
@@ -240,16 +132,52 @@ const FinancialDashboard = () => {
           </div>
         </div>
 
-        {/* KPI Cards */}
+        {/* Financial Summary */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
             <div className="w-1 h-6 bg-slate-700 rounded-full" />
-            Key Financial Metrics
+            Financial Summary
           </h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {kpis.map((kpi, index) => (
-              <KPICard key={index} kpi={kpi} />
-            ))}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Sales Orders</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{salesOrders.length}</div>
+                <p className="text-xs text-muted-foreground">Total orders</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Invoices</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{invoices.length}</div>
+                <p className="text-xs text-muted-foreground">Total invoices</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Expenses</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{expenses.length}</div>
+                <p className="text-xs text-muted-foreground">Expense entries</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Vendor Bills</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{vendorBills.length}</div>
+                <p className="text-xs text-muted-foreground">Outstanding bills</p>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
@@ -284,11 +212,14 @@ const FinancialDashboard = () => {
               </CardContent>
             </Card>
             
-            <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/budget')}
+            >
               <CardContent className="p-6 text-center">
-                <PieChart className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-                <h3 className="font-semibold">Financial Reports</h3>
-                <p className="text-sm text-muted-foreground">View detailed reports</p>
+                <BarChart3 className="h-8 w-8 text-slate-600 mx-auto mb-2" />
+                <h3 className="font-semibold">Budget Tracking</h3>
+                <p className="text-sm text-muted-foreground">Monitor project budgets</p>
               </CardContent>
             </Card>
           </div>

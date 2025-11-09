@@ -309,7 +309,7 @@ const Admin = () => {
                         {user.role.replace('_', ' ').toUpperCase()}
                       </Badge>
                     </TableCell>
-                    <TableCell>${user.hourly_rate}</TableCell>
+                    <TableCell>₹{user.hourly_rate}</TableCell>
                     <TableCell>
                       <Badge variant={user.logged_out ? 'destructive' : 'default'}>
                         {user.logged_out ? 'Logged Out' : 'Active'}

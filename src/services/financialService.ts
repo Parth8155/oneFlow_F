@@ -52,6 +52,16 @@ class FinancialService {
     return response.data;
   }
 
+  async getProjectBudgetBreakdown(projectId: string) {
+    const response = await api.get(`/financial/projects/${projectId}/budget-breakdown`);
+    return response.data.data || response.data;
+  }
+
+  async getAllProjectsBudgetSummary() {
+    const response = await api.get(`/financial/budget-summary`);
+    return response.data.data || response.data;
+  }
+
   // Sales Orders
   async getAllSalesOrders(filters?: any) {
     const response = await api.get<FinancialDocument[]>('/sales-orders', {
@@ -91,6 +101,16 @@ class FinancialService {
     return response.data;
   }
 
+  async updateInvoice(id: string, data: any) {
+    const response = await api.put<FinancialDocument>(`/customer-invoices/${id}`, data);
+    return response.data;
+  }
+
+  async deleteInvoice(id: string) {
+    const response = await api.delete(`/customer-invoices/${id}`);
+    return response.data;
+  }
+
   // Vendor Bills
   async getAllVendorBills(filters?: any) {
     const response = await api.get<FinancialDocument[]>('/vendor-bills', {
@@ -104,17 +124,35 @@ class FinancialService {
     return response.data;
   }
 
-  // Expenses
-  async getAllExpenses(filters?: any) {
-    const response = await api.get<FinancialDocument[]>('/expenses', {
-      params: filters,
-    });
+  async updateVendorBill(id: string, data: any) {
+    const response = await api.put(`/vendor-bills/${id}`, data);
     return response.data;
   }
 
+  async deleteVendorBill(id: string) {
+    await api.delete(`/vendor-bills/${id}`);
+  }
+
+  // Expenses
+  async getAllExpenses(filters?: any) {
+    const response = await api.get('/expenses', {
+      params: filters,
+    });
+    return response.data.expenses || response.data;
+  }
+
   async createExpense(data: any) {
-    const response = await api.post<FinancialDocument>('/expenses', data);
-    return response.data;
+    const response = await api.post('/expenses', data);
+    return response.data.expense || response.data;
+  }
+
+  async updateExpense(id: string, data: any) {
+    const response = await api.put(`/expenses/${id}`, data);
+    return response.data.expense || response.data;
+  }
+
+  async deleteExpense(id: string) {
+    await api.delete(`/expenses/${id}`);
   }
 }
 

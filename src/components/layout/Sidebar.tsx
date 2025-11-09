@@ -60,6 +60,12 @@ const navItems: NavItem[] = [
     roles: ['admin', 'sales_finance'],
   },
   {
+    label: 'Budget Tracking',
+    icon: <TrendingUp className="h-5 w-5" />,
+    href: '/budget',
+    roles: ['admin', 'project_manager', 'sales_finance'],
+  },
+  {
     label: 'Analytics',
     icon: <BarChart3 className="h-5 w-5" />,
     href: '/analytics',

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import financialService from '@/services/financialService';
 import { 
   Receipt, 
@@ -21,13 +22,17 @@ import {
   MoreHorizontal,
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
 const InvoicesPage = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const queryClient = useQueryClient();
@@ -51,7 +56,12 @@ const InvoicesPage = () => {
 
   // Ensure invoices is always an array
   const invoices = Array.isArray(invoicesData) ? invoicesData : 
+                   (invoicesData?.customerInvoices && Array.isArray(invoicesData.customerInvoices)) ? invoicesData.customerInvoices :
                    (invoicesData?.data && Array.isArray(invoicesData.data)) ? invoicesData.data : [];
+
+  // Debug logging
+  console.log('Invoices data:', invoicesData);
+  console.log('Processed invoices:', invoices);
 
   // Create invoice mutation
   const createMutation = useMutation({
@@ -60,6 +70,26 @@ const InvoicesPage = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-invoices'] });
       setIsCreateDialogOpen(false);
       resetForm();
+    },
+  });
+
+  // Update invoice mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      financialService.updateInvoice(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer-invoices'] });
+      setIsEditDialogOpen(false);
+      setEditingInvoice(null);
+      resetForm();
+    },
+  });
+
+  // Delete invoice mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => financialService.deleteInvoice(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer-invoices'] });
     },
   });
 
@@ -73,20 +103,54 @@ const InvoicesPage = () => {
       due_date: '',
       description: ''
     });
+    setEditingInvoice(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({
-      ...formData,
-      amount: parseFloat(formData.amount),
+    if (editingInvoice) {
+      // Update existing invoice
+      updateMutation.mutate({
+        id: editingInvoice.id,
+        data: {
+          ...formData,
+          amount: parseFloat(formData.amount),
+        },
+      });
+    } else {
+      // Create new invoice
+      createMutation.mutate({
+        ...formData,
+        amount: parseFloat(formData.amount),
+      });
+    }
+  };
+
+  const handleEditInvoice = (invoice: any) => {
+    setEditingInvoice(invoice);
+    setFormData({
+      invoice_number: invoice.invoice_number || '',
+      customer_name: invoice.customer_name || '',
+      amount: invoice.amount?.toString() || '',
+      status: invoice.status || 'draft',
+      invoice_date: invoice.invoice_date || new Date().toISOString().split('T')[0],
+      due_date: invoice.due_date || '',
+      description: invoice.description || ''
     });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteInvoice = (invoiceId: string) => {
+    if (confirm('Are you sure you want to delete this invoice?')) {
+      deleteMutation.mutate(invoiceId);
+    }
   };
 
   // Filter invoices
   const filteredInvoices = invoices.filter((invoice: any) => {
-    const matchesSearch = invoice.partner.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (invoice.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (invoice.invoice_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (invoice.id || '').toString().toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -243,6 +307,112 @@ const InvoicesPage = () => {
           </Dialog>
         </div>
 
+        {/* Edit Invoice Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Invoice</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-invoice_number">Invoice Number</Label>
+                <Input
+                  id="edit-invoice_number"
+                  value={formData.invoice_number}
+                  onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                  placeholder="Auto-generated if empty"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-customer_name">Customer Name</Label>
+                <Input
+                  id="edit-customer_name"
+                  value={formData.customer_name}
+                  onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                  required
+                  placeholder="Enter customer name"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-amount">Amount</Label>
+                <Input
+                  id="edit-amount"
+                  type="number"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-status">Status</Label>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value as any })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="sent">Sent</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="overdue">Overdue</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-invoice_date">Invoice Date</Label>
+                <Input
+                  id="edit-invoice_date"
+                  type="date"
+                  value={formData.invoice_date}
+                  onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-due_date">Due Date</Label>
+                <Input
+                  id="edit-due_date"
+                  type="date"
+                  value={formData.due_date}
+                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  placeholder="Optional description"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button type="submit" disabled={updateMutation.isPending} className="flex-1">
+                  {updateMutation.isPending ? 'Updating...' : 'Update Invoice'}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    resetForm();
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
@@ -345,7 +515,7 @@ const InvoicesPage = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold">
-                    INV-{invoice.id.toString().padStart(4, '0')}
+                    {invoice.invoice_number || `INV-${invoice.id.toString().padStart(4, '0')}`}
                   </CardTitle>
                   <Badge className={cn(getStatusColor(invoice.status))}>
                     <div className="flex items-center gap-1">
@@ -358,17 +528,17 @@ const InvoicesPage = () => {
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="h-4 w-4" />
-                  <span>{invoice.partner}</span>
+                  <span>{invoice.customer_name}</span>
                 </div>
                 
                 <div className="flex items-center gap-2 text-sm">
                   <DollarSign className="h-4 w-4 text-green-600" />
-                  <span className="font-semibold">${invoice.amount?.toLocaleString() || '0'}</span>
+                  <span className="font-semibold">₹{invoice.amount?.toLocaleString() || '0'}</span>
                 </div>
                 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>{invoice.date ? format(new Date(invoice.date), 'MMM dd, yyyy') : 'No date'}</span>
+                  <span>{invoice.invoice_date ? format(new Date(invoice.invoice_date), 'MMM dd, yyyy') : 'No date'}</span>
                 </div>
                 
                 {invoice.description && (
@@ -379,11 +549,28 @@ const InvoicesPage = () => {
                 
                 <div className="flex items-center justify-between pt-2">
                   <span className="text-xs text-muted-foreground">
-                    {invoice.type?.replace('_', ' ').toUpperCase()}
+                    Invoice #{invoice.id}
                   </span>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditInvoice(invoice)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteInvoice(invoice.id)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardContent>
             </Card>

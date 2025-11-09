@@ -221,7 +221,7 @@ export const CreateProjectForm = ({ onSuccess, onCancel }: CreateProjectFormProp
 
               <div className="space-y-2">
                 <Label htmlFor="budget" className="text-sm font-medium text-foreground">
-                  Budget ($)
+                  Budget (₹)
                 </Label>
                 <Input
                   id="budget"

@@ -32,6 +32,7 @@ export interface Task {
     full_name: string;
     email: string;
   };
+  timesheets?: TimesheetEntry[];
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +52,25 @@ export interface TaskComment {
   userId: string;
   text: string;
   createdAt: string;
+}
+
+export interface TimesheetEntry {
+  id: number;
+  task_id: number;
+  user_id: number;
+  project_id: number;
+  hours: number;
+  date: string;
+  description?: string;
+  is_billable: boolean;
+  user: {
+    id: number;
+    username: string;
+    full_name: string;
+    email: string;
+  };
+  created_at: string;
+  updated_at: string;
 }
 
 class TaskService {
