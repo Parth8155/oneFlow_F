@@ -65,7 +65,7 @@ const Dashboard = () => {
                   {user?.role === 'admin' && 'System overview and project management'}
                   {user?.role === 'project_manager' && 'Your project portfolio at a glance'}
                   {user?.role === 'team_member' && 'Your tasks and assignments'}
-                  {user?.role === 'sales_finance' && 'Financial overview and analytics'}
+                  {user?.role === 'sales_finance' && 'Financial overview and management'}
                 </p>
               </div>
             </div>

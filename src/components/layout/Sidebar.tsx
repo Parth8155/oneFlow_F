@@ -66,12 +66,6 @@ const navItems: NavItem[] = [
     roles: ['admin', 'project_manager', 'sales_finance'],
   },
   {
-    label: 'Analytics',
-    icon: <BarChart3 className="h-5 w-5" />,
-    href: '/analytics',
-    roles: ['admin', 'project_manager'],
-  },
-  {
     label: 'Settings',
     icon: <Settings className="h-5 w-5" />,
     href: '/settings',

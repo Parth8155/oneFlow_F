@@ -17,7 +17,6 @@ import SalesOrdersPage from "./pages/SalesOrdersPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import BudgetDashboard from "./pages/BudgetDashboard";
-import Analytics from "./pages/Analytics";
 import Team from "./pages/Team";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -111,14 +110,6 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole={["admin", "project_manager", "sales_finance"]}>
                   <BudgetDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <Analytics />
                 </ProtectedRoute>
               }
             />

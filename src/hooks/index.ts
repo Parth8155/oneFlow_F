@@ -9,6 +9,3 @@ export * from './useFinancials';
 
 // Timesheets
 export * from './useTimesheets';
-
-// Analytics
-export * from './useAnalytics';

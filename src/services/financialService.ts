@@ -19,12 +19,7 @@ export interface ProjectFinancials {
 }
 
 class FinancialService {
-  // Project Financial Analytics
-  async getProjectFinancialAnalytics(projectId: string) {
-    const response = await api.get(`/financial/projects/${projectId}/analytics`);
-    return response.data;
-  }
-
+  // Project Financial Documents
   async getProjectFinancialDocuments(projectId: string) {
     const response = await api.get<FinancialDocument[]>(
       `/financial/projects/${projectId}/documents`

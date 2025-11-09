@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FolderKanban, Search, Filter, X, Edit, Trash2, Users, Calendar, DollarSign, ListTodo } from 'lucide-react';
+import { Plus, FolderKanban, Search, Filter, X, Trash2, Users, Calendar, DollarSign, ListTodo } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -192,9 +192,6 @@ const Projects = () => {
                         title="View Tasks"
                       >
                         <ListTodo className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>

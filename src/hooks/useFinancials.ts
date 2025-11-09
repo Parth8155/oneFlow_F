@@ -1,23 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import financialService from '@/services/financialService';
 
-// Project Analytics
-export const useProjectFinancialAnalytics = (projectId: string) => {
-  return useQuery({
-    queryKey: ['financials', 'analytics', projectId],
-    queryFn: async () => {
-      try {
-        return await financialService.getProjectFinancialAnalytics(projectId);
-      } catch (error) {
-        console.error('Failed to fetch project financial analytics:', error);
-        throw error;
-      }
-    },
-    enabled: !!projectId,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-};
-
+// Project Financial Documents
 export const useProjectRevenue = (projectId: string) => {
   return useQuery({
     queryKey: ['financials', 'revenue', projectId],

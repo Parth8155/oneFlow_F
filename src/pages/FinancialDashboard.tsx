@@ -15,6 +15,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const FinancialDashboard = () => {
   const { user } = useAuth();
@@ -61,14 +62,6 @@ const FinancialDashboard = () => {
   const expenses = extractArrayData(expensesData);
   const vendorBills = extractArrayData(vendorBillsData);
 
-  // Debug logging to check API responses
-  console.log('API Responses:', {
-    salesOrdersData,
-    salesOrdersError,
-    salesOrders: salesOrders.length,
-    loadingSales
-  });
-
   const isLoading = loadingSales || loadingInvoices || loadingExpenses || loadingBills;
 
 
@@ -80,6 +73,20 @@ const FinancialDashboard = () => {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading financial data...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Check if user is authenticated
+  if (!user) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-destructive mb-2">Authentication Required</h2>
+            <p className="text-muted-foreground">Please log in to view financial data.</p>
           </div>
         </div>
       </AppLayout>
@@ -138,6 +145,7 @@ const FinancialDashboard = () => {
             <div className="w-1 h-6 bg-slate-700 rounded-full" />
             Financial Summary
           </h2>
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
@@ -220,6 +228,36 @@ const FinancialDashboard = () => {
                 <BarChart3 className="h-8 w-8 text-slate-600 mx-auto mb-2" />
                 <h3 className="font-semibold">Budget Tracking</h3>
                 <p className="text-sm text-muted-foreground">Monitor project budgets</p>
+              </CardContent>
+            </Card>
+
+            {/* Test button to create sample sales order */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-shadow bg-blue-50 border-blue-200"
+              onClick={async () => {
+                try {
+                  // First try to seed data
+                  await fetch('http://localhost:3000/api/sales-orders?seed=true', {
+                    method: 'GET',
+                    headers: {
+                      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+
+                  toast.success('Test sales orders created!');
+                  // Refetch data by reloading
+                  window.location.reload();
+                } catch (error: any) {
+                  console.error('Seed error:', error);
+                  toast.error('Failed to create test orders: ' + (error.message || 'Unknown error'));
+                }
+              }}
+            >
+              <CardContent className="p-6 text-center">
+                <FileText className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-blue-800">Create Test Orders</h3>
+                <p className="text-sm text-blue-600">Add sample sales orders</p>
               </CardContent>
             </Card>
           </div>
